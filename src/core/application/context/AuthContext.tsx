@@ -1,7 +1,7 @@
 import { createContext, useContext, ReactNode, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { AuthRepository, LoginResponse } from "../../../infrastructure/repositories/AuthRepository";
-import { saveTokens, clearTokens, isAuthenticated } from "../../../utils/tokenUtils"; // Import token utilities
+import { authRepository } from "../../../infrastructure/repositories/AuthRepository"; 
+import { saveTokens, clearTokens, isAuthenticated } from "../../../utils/tokenUtils";
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -36,8 +36,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      const response: LoginResponse = await AuthRepository.login(email, password);
-      saveTokens(response.access, response.refresh); // Save tokens using the utility
+      const response = await authRepository.login(email, password);
+      saveTokens(response.access, response.refresh); 
       setIsAuth(true);
       navigate("/welcome");
     } catch (error) {
@@ -47,35 +47,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
-    clearTokens(); 
+    clearTokens();
     setIsAuth(false);
     navigate("/login");
   };
 
   const signup = async (email: string) => {
-    await AuthRepository.signup(email);
+    await authRepository.signup(email); 
   };
 
   const verifyOTP = async (email: string, otp: string) => {
-    await AuthRepository.verifyOTP(email, otp);
+    await authRepository.verifyOTP(email, otp); 
   };
 
   const completeRegistration = async (userData: any) => {
-    await AuthRepository.completeRegistration(userData);
+    await authRepository.completeRegistration(userData); 
     setIsAuth(false);
     navigate("/login", { state: { message: "Thank you for registration!" } });
   };
 
   const resetPassword = async (email: string, newPassword: string) => {
-    await AuthRepository.resetPassword(email, newPassword);
+    await authRepository.resetPassword(email, newPassword); 
   };
 
   const requestPasswordReset = async (email: string) => {
-    await AuthRepository.requestPasswordReset(email);
+    await authRepository.requestPasswordReset(email); 
   };
 
   const verifyResetOTP = async (email: string, otp: string) => {
-    await AuthRepository.verifyResetOTP(email, otp);
+    await authRepository.verifyResetOTP(email, otp);
   };
 
   return (

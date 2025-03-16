@@ -1,19 +1,21 @@
+// tokenUtils.ts
+
 // Constants for token storage keys
-const ACCESS_TOKEN_KEY = "access_token";
-const REFRESH_TOKEN_KEY = "refresh_token";
+export const ACCESS_TOKEN_KEY = "access_token";
+export const REFRESH_TOKEN_KEY = "refresh_token";
 
-
+// Save tokens to localStorage
 export const saveTokens = (accessToken: string, refreshToken: string): void => {
   localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
   localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
 };
 
-
+// Retrieve the access token from localStorage
 export const getAccessToken = (): string | null => {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
 };
 
-
+// Retrieve the refresh token from localStorage
 export const getRefreshToken = (): string | null => {
   return localStorage.getItem(REFRESH_TOKEN_KEY);
 };

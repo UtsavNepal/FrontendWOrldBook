@@ -1,6 +1,8 @@
-import { httpClient } from "../http/HttpClients";
+// ProfileRepository.ts
+import { BaseRepository } from "../base/BaseRepository";
 import { Profile } from "../../core/domain/entities/Profile.entity";
 
+// Define the response type for the profile
 export interface ProfileResponse {
   profile_picture: string;
   username: string;
@@ -18,59 +20,103 @@ export interface ProfileResponse {
   };
 }
 
-export const ProfileRepository = {
+export class ProfileRepository extends BaseRepository<ProfileResponse> {
+  constructor() {
+    super("/profile"); // Base URL for profile endpoints
+  }
+
   // Fetch the logged-in user's profile
-  getProfile: async (): Promise<Profile> => {
-    const response = await httpClient.get<ProfileResponse[]>("/profile/");
-    const profileData = response[0]; // Assuming the API returns an array with one profile object
-    return {
-      ...profileData,
-      user: {
-        email: profileData.user.email,
-        gender: profileData.user.gender,
-        joined_at: profileData.user.joined_at,
-        birthday: profileData.user.birthday,
-      },
-    };
-  },
+  async getProfile(): Promise<Profile> {
+    try {
+      const response = await this.get<ProfileResponse>("/");
+
+      // Check if the response is valid
+      if (!response || !response.user) {
+        throw new Error("Invalid profile data received from the server");
+      }
+
+      return {
+        ...response,
+        user: {
+          email: response.user.email,
+          gender: response.user.gender,
+          joined_at: response.user.joined_at,
+          birthday: response.user.birthday,
+        },
+      };
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+      throw error; // Re-throw the error to be handled by the caller
+    }
+  }
 
   // Update the logged-in user's profile
-  updateProfile: async (updatedData: Partial<Profile>): Promise<Profile> => {
-    const response = await httpClient.patch<ProfileResponse>("/profile/", updatedData);
-    return {
-      ...response,
-      user: {
-        email: response.user.email,
-        gender: response.user.gender,
-        joined_at: response.user.joined_at,
-        birthday: response.user.birthday,
-      },
-    };
-  },
+  async updateProfile(updatedData: Partial<Profile>): Promise<Profile> {
+    try {
+      const response = await this.patch<ProfileResponse>("/", updatedData);
 
-  // Upload a profile picture
-  uploadProfilePicture: async (file: File): Promise<Profile> => {
-    const formData = new FormData();
-    formData.append("profile_picture", file);
+      // Check if the response is valid
+      if (!response || !response.user) {
+        throw new Error("Invalid profile data received from the server");
+      }
 
-    const response = await httpClient.patch<ProfileResponse>("/profile/", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    return {
-      ...response,
-      user: {
-        email: response.user.email,
-        gender: response.user.gender,
-        joined_at: response.user.joined_at,
-        birthday: response.user.birthday,
-      },
-    };
-  },
+      return {
+        ...response,
+        user: {
+          email: response.user.email,
+          gender: response.user.gender,
+          joined_at: response.user.joined_at,
+          birthday: response.user.birthday,
+        },
+      };
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+      throw error; // Re-throw the error to be handled by the caller
+    }
+  }
+
+  // Upload a new profile picture
+  async uploadProfilePicture(file: File): Promise<Profile> {
+    try {
+      const formData = new FormData();
+      formData.append("profile_picture", file);
+
+      const response = await this.patch<ProfileResponse>("/", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      // Check if the response is valid
+      if (!response || !response.user) {
+        throw new Error("Invalid profile data received from the server");
+      }
+
+      return {
+        ...response,
+        user: {
+          email: response.user.email,
+          gender: response.user.gender,
+          joined_at: response.user.joined_at,
+          birthday: response.user.birthday,
+        },
+      };
+    } catch (error) {
+      console.error("Failed to upload profile picture:", error);
+      throw error; // Re-throw the error to be handled by the caller
+    }
+  }
 
   // Delete the logged-in user's account
-  deleteAccount: async (): Promise<void> => {
-    await httpClient.delete("/profile/");
-  },
-};
+  async deleteAccount(): Promise<void> {
+    try {
+      await this.delete<void>("/");
+    } catch (error) {
+      console.error("Failed to delete account:", error);
+      throw error;
+    }
+  }
+}
+
+// Export an instance of ProfileRepository
+export const profileRepository = new ProfileRepository();

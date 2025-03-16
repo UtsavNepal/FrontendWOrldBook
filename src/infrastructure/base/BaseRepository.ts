@@ -1,31 +1,50 @@
-// // src/infrastructure/base/BaseRepository.ts
+// BaseRepository.ts
+import { AxiosRequestConfig } from "axios";
+import { httpClient } from "../http/HttpClients";
 
-// import { HttpClient } from "../http/HttpClients";
+export abstract class BaseRepository<T> {
+  protected baseUrl: string;
 
-// export abstract class BaseRepository {
-//   protected http: HttpClient;
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
 
-//   constructor(http: HttpClient) {
-//     this.http = http;
-//   }
+  // GET: Fetch all items
+  async getAll(config?: AxiosRequestConfig): Promise<T[]> {
+    return httpClient.get<T[]>(this.baseUrl, config);
+  }
 
-//   protected async get<T>(url: string): Promise<T> {
-//     return this.http.get(url);
-//   }
+  // GET: Fetch an item by ID
+  async getById(id: string | number, config?: AxiosRequestConfig): Promise<T> {
+    const url = `${this.baseUrl}/${id}`;
+    return httpClient.get<T>(url, config);
+  }
 
-//   protected async post<T>(url: string, data: any): Promise<T> {
-//     return this.http.post(url, data);
-//   }
+  async get<ResponseType>(endpoint: string, config?: AxiosRequestConfig): Promise<ResponseType> {
+    const url = `${this.baseUrl}${endpoint}`;
+    return httpClient.get<ResponseType>(url, config);
+  }
 
-//   protected async put<T>(url: string, data: any): Promise<T> {
-//     return this.http.put(url, data);
-//   }
+  // POST: Create a new item
+  async post<ResponseType>(endpoint: string, data?: any, config?: AxiosRequestConfig): Promise<ResponseType> {
+    const url = `${this.baseUrl}${endpoint}`;
+    return httpClient.post<ResponseType>(url, data, config);
+  }
 
-//   protected async patch<T>(url: string, data: any): Promise<T> {
-//     return this.http.patch(url, data);
-//   }
+  async put<ResponseType>(endpoint: string, data?: any, config?: AxiosRequestConfig): Promise<ResponseType> {
+    const url = `${this.baseUrl}${endpoint}`;
+    return httpClient.put<ResponseType>(url, data, config);
+  }
 
-//   protected async delete<T>(url: string): Promise<T> {
-//     return this.http.delete(url);
-//   }
-// }
+  // PATCH: Partially update an item
+  async patch<ResponseType>(endpoint: string, data?: any, config?: AxiosRequestConfig): Promise<ResponseType> {
+    const url = `${this.baseUrl}${endpoint}`;
+    return httpClient.patch<ResponseType>(url, data, config);
+  }
+
+  // DELETE: Delete an item
+  async delete<ResponseType>(endpoint: string, config?: AxiosRequestConfig): Promise<ResponseType> {
+    const url = `${this.baseUrl}${endpoint}`;
+    return httpClient.delete<ResponseType>(url, config);
+  }
+}
