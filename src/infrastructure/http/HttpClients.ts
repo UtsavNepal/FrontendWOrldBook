@@ -1,8 +1,9 @@
-// httpClient.ts
+
 import axiosInstance from "../../utils/axiosinstance";
 import { AxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
 
-// Define the HttpClient interface
+
+
 export interface HttpClient {
   get: <T>(url: string, config?: AxiosRequestConfig) => Promise<T>;
   post: <T>(url: string, data?: any, config?: AxiosRequestConfig) => Promise<T>;

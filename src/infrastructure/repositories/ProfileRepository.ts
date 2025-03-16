@@ -2,7 +2,6 @@
 import { BaseRepository } from "../base/BaseRepository";
 import { Profile } from "../../core/domain/entities/Profile.entity";
 
-// Define the response type for the profile
 export interface ProfileResponse {
   profile_picture: string;
   username: string;
@@ -95,15 +94,15 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
       return {
         ...response,
         user: {
-          email: response.user.email,
-          gender: response.user.gender,
           joined_at: response.user.joined_at,
+          gender: response.user.gender,
+          email: response.user.email,
           birthday: response.user.birthday,
         },
       };
     } catch (error) {
       console.error("Failed to upload profile picture:", error);
-      throw error; // Re-throw the error to be handled by the caller
+      throw error; 
     }
   }
 

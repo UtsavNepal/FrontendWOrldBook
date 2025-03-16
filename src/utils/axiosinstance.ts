@@ -1,10 +1,10 @@
-// axiosInstance.ts
+
 
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig, AxiosRequestConfig } from "axios";
 import { getAccessToken, getRefreshToken, clearTokens, saveTokens } from "./tokenUtils";
 
 
-const BASE_URL = "http://127.0.0.1:8000"; // Replace with your backend URL
+const BASE_URL = "http://127.0.0.1:8000"; 
 
 
 const axiosInstance = axios.create({

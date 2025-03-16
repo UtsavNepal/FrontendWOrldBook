@@ -8,9 +8,9 @@ export interface Profile {
     tagged_posts: any[];
     reactions: any[];
     user: {
-      email: string;
-      gender: string;
       joined_at: string;
+      gender: string;
+      email: string;
       birthday: string;
     };
   }

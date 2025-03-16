@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../core/application/context/AuthContext";
-import { useProfile } from "../../core/application/context/ProfileContext";
-import { Profile } from "../../core/domain/entities/Profile.entity";
+import { useAuth } from "../../../core/application/context/AuthContext";
+import { useProfile } from "../../../core/application/context/ProfileContext";
+import { Profile } from "../../../core/domain/entities/Profile.entity";
 
-// Backend base URL
+
 const BACKEND_BASE_URL = "http://127.0.0.1:8000";
 
 export const WelcomePage = () => {

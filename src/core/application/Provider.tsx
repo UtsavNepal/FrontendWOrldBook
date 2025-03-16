@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { AuthProvider } from "./context/AuthContext";
 import { ProfileProvider } from "./context/ProfileContext";
+import { PostProvider } from "./context/PostContext";
 
 interface ProviderProps {
   children: ReactNode;
@@ -9,7 +10,10 @@ interface ProviderProps {
 export const Provider = ({ children }: ProviderProps) => {
   return (
     <AuthProvider>
-        <ProfileProvider>{children}</ProfileProvider>
+        <ProfileProvider>
+        <PostProvider>{children}
+        </PostProvider>
+        </ProfileProvider>
     </AuthProvider>
   );
 };

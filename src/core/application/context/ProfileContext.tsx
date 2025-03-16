@@ -37,7 +37,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
       setProfile(profileData);
     } catch (error) {
       console.error("Failed to fetch profile:", error);
-      setProfile(null); // Reset profile state on error
+      setProfile(null); 
     }
   };
 
@@ -51,7 +51,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Upload a profile picture
+  
   const uploadProfilePicture = async (file: File) => {
     try {
       const updatedProfile = await profileRepository.uploadProfilePicture(file);
@@ -61,11 +61,11 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Delete the logged-in user's account
+  
   const deleteAccount = async () => {
     try {
       await profileRepository.deleteAccount();
-      setProfile(null); // Clear profile data after deletion
+      setProfile(null); 
     } catch (error) {
       console.error("Failed to delete account:", error);
     }
