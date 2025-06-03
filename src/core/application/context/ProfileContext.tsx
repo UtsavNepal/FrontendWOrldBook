@@ -2,7 +2,7 @@ import { createContext, useContext, ReactNode, useState } from "react";
 import { Profile } from "../../domain/entities/Profile.entity";
 import { ProfileRepository } from "../../../infrastructure/repositories/ProfileRepository";
 
-// Define the context type
+
 interface ProfileContextType {
   profile: Profile | null;
   fetchProfile: () => Promise<void>;
@@ -11,10 +11,10 @@ interface ProfileContextType {
   deleteAccount: () => Promise<void>;
 }
 
-// Create the context
+
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
-// Custom hook to use the ProfileContext
+
 export const useProfile = () => {
   const context = useContext(ProfileContext);
   if (!context) {
@@ -23,11 +23,11 @@ export const useProfile = () => {
   return context;
 };
 
-// ProfileProvider component
+
 export const ProfileProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
 
-  // Instantiate the ProfileRepository
+
   const profileRepository = new ProfileRepository();
 
   // Fetch the logged-in user's profile

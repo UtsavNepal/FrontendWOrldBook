@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../core/application/context/AuthContext";
-
 import { Modal } from "./modal/modal";
 import { ResetPasswordForm } from "./ResetPasswordPage";
 
@@ -15,18 +14,20 @@ export const LoginPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const successMessage = location.state?.message; // Get the success message from location.state
+  const successMessage = location.state?.message; 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null); // Clear previous errors
+    setError(null); 
+    setLoading(true);
     try {
       await login(email, password);
+      // Navigate to the desired page after successful login
+      navigate("/feed"); // Example: Redirect to the feed page
     } catch (error) {
       setError("Invalid email or password. Please try again."); // Display error message
-    }
-    finally{
-        setLoading(false);
+    } finally {
+      setLoading(false); // Reset loading state
     }
   };
 
@@ -41,11 +42,15 @@ export const LoginPage = () => {
           </p>
         </div>
 
+        {/* Right Section */}
         <div className="w-1/2 bg-gray-100 p-8 rounded-lg shadow-lg">
-          
-          {successMessage && <p style={{ color: "green" }}>{successMessage}</p>}{" "}
-          
+          {/* Success Message */}
+          {successMessage && <p style={{ color: "green" }}>{successMessage}</p>}
+
+          {/* Error Message */}
           {error && <p style={{ color: "red" }}>{error}</p>}
+
+          {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex space-x-1">
               <input
@@ -54,10 +59,11 @@ export const LoginPage = () => {
                 value={email}
                 className="w-2/2 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                 onChange={(e) => setEmail(e.target.value)}
+                required
               />
             </div>
             <div className="flex space-x-1">
-            <input
+              <input
                 type="password"
                 placeholder="Password"
                 value={password}
@@ -76,17 +82,28 @@ export const LoginPage = () => {
               {loading ? "Logging in..." : "Login"}
             </button>
           </form>
+
+          {/* Reset Password Link */}
           <p className="text-center text-sm mt-7">
             Forget password?{" "}
-            <button className="text-blue-500 hover:underline" onClick={() => setIsResetModalOpen(true)}>Reset</button>{" "}
-            {/* Open modal on click */}
-            </p>
+            <button
+              className="text-blue-500 hover:underline"
+              onClick={() => setIsResetModalOpen(true)}
+            >
+              Reset
+            </button>
+          </p>
+
+          {/* Signup Link */}
           <p className="text-center text-sm mt-4">
             Don't have an account?{" "}
-            <button className="text-blue-500 hover:underline" onClick={() => navigate("/signup")}>Signup</button>
-            <br />
-           </p>
-           
+            <button
+              className="text-blue-500 hover:underline"
+              onClick={() => navigate("/signup")}
+            >
+              Signup
+            </button>
+          </p>
         </div>
       </div>
 
@@ -97,4 +114,3 @@ export const LoginPage = () => {
     </div>
   );
 };
-

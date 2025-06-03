@@ -27,7 +27,7 @@ export const ResetPasswordForm = ({ onClose }: { onClose: () => void }) => {
       e.preventDefault();
       await resetPassword(email, newPassword);
       alert("Password reset successfully!");
-      onClose(); // Close the modal after resetting the password
+      onClose();
     };
   
     return (

@@ -12,11 +12,12 @@ interface EditPostModalProps {
 const EditPostModal: React.FC<EditPostModalProps> = ({ post, onClose }) => {
   const [content, setContent] = useState(post.content);
   const [image, setImage] = useState<File | null>(null);
+  const [visibility, setVisibility] = useState(post.visibility || "public");
   const { updatePost } = usePostContext();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await updatePost(post.id, content, image || undefined);
+    await updatePost(post.id, content, image || undefined, visibility);
     onClose();
   };
 
@@ -36,6 +37,15 @@ const EditPostModal: React.FC<EditPostModalProps> = ({ post, onClose }) => {
             onChange={(e) => setImage(e.target.files?.[0] || null)}
             className="w-full p-2 border rounded"
           />
+          <select
+            value={visibility}
+            onChange={(e) => setVisibility(e.target.value)}
+            className="w-full p-2 border rounded"
+          >
+            <option value="public">Public</option>
+            <option value="authenticated">Friends Only</option>
+            <option value="private">Private</option>
+          </select>
           <button
             type="submit"
             className="bg-blue-500 text-white px-4 py-2 rounded"

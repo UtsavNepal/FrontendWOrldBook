@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../core/application/context/AuthContext";
 import { useProfile } from "../../../core/application/context/ProfileContext";
 import { Profile } from "../../../core/domain/entities/Profile.entity";
+import { authRepository } from '../../../infrastructure/repositories/AuthRepository';
+import Spinner from "../../ui/Spinner";
 
 
 const BACKEND_BASE_URL = "http://127.0.0.1:8000";
@@ -15,20 +17,29 @@ export const WelcomePage = () => {
   const [updatedProfilePicture, setUpdatedProfilePicture] = useState<File | null>(null);
   const [updatedBio, setUpdatedBio] = useState("");
   const [updatedGender, setUpdatedGender] = useState("");
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
-  // Redirect to login if not authenticated
+  
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login");
     } else {
-      fetchProfile();
+      setLoading(true);
+      fetchProfile().finally(() => setLoading(false));
     }
-  }, [isAuthenticated, navigate, fetchProfile]);
+  }, []);
 
   const handleUpdateProfile = async () => {
+    setLoading(true);
     try {
-      let updatedData: Partial<Profile> = {};
+      let updatedData: any = {};
       switch (editMode) {
         case "username":
           updatedData = { username: updatedUsername };
@@ -42,15 +53,18 @@ export const WelcomePage = () => {
           updatedData = { bio: updatedBio };
           break;
         case "gender":
-          updatedData = { user: { ...profile!.user, gender: updatedGender } };
+          updatedData = { "user[gender]": updatedGender };
           break;
         default:
           return;
       }
       await updateProfile(updatedData);
+      await fetchProfile();
       setEditMode(null);
     } catch (error) {
       console.error("Failed to update profile:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -62,9 +76,26 @@ export const WelcomePage = () => {
     }
   };
 
+  const handleChangePassword = async () => {
+    setPasswordMessage(null);
+    setPasswordError(null);
+    try {
+      const res = await authRepository.changePassword(oldPassword, newPassword, confirmPassword);
+      setPasswordMessage(res.message);
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setShowPasswordForm(false);
+    } catch (err: any) {
+      setPasswordError(err?.response?.data?.error || "Failed to change password");
+    }
+  };
+
   if (!isAuthenticated) {
-    return null; // Or a loading spinner
+    return null; 
   }
+
+  if (loading) return <Spinner />;
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -90,7 +121,7 @@ export const WelcomePage = () => {
                 <span className="font-semibold">Bio:</span> {profile.bio}
               </p>
               <p className="text-lg">
-                <span className="font-semibold">Gender:</span> {profile.user.gender}
+                <span className="font-semibold">Gender:</span> {profile.user.gender ? profile.user.gender.charAt(0).toUpperCase() + profile.user.gender.slice(1) : ''}
               </p>
             </div>
 
@@ -176,6 +207,12 @@ export const WelcomePage = () => {
                 </div>
               </div>
             )}
+            <p className="text-lg">
+                <span className="font-semibold">Total Friends:</span> {profile.total_friends}
+              </p>
+              <p className="text-lg">
+                <span className="font-semibold">Total Posts:</span> {profile.total_posts}
+              </p>
             {editMode === "bio" && (
               <div className="space-y-4">
                 <textarea
@@ -208,9 +245,8 @@ export const WelcomePage = () => {
                   className="w-full p-2 border rounded"
                 >
                   <option value="">Select Gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
                 </select>
                 <div className="flex space-x-4">
                   <button
@@ -258,6 +294,56 @@ export const WelcomePage = () => {
             Logout
           </button>
         </div>
+        <div className="flex justify-center mt-6">
+          <button
+            onClick={() => setShowPasswordForm((prev) => !prev)}
+            className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+          >
+            Change Password
+          </button>
+        </div>
+        {showPasswordForm && (
+          <div className="mt-4 max-w-md mx-auto bg-gray-50 p-4 rounded shadow">
+            <h3 className="text-lg font-semibold mb-2">Change Password</h3>
+            <input
+              type="password"
+              placeholder="Old Password"
+              value={oldPassword}
+              onChange={(e) => setOldPassword(e.target.value)}
+              className="w-full p-2 border rounded mb-2"
+            />
+            <input
+              type="password"
+              placeholder="New Password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full p-2 border rounded mb-2"
+            />
+            <input
+              type="password"
+              placeholder="Confirm New Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full p-2 border rounded mb-2"
+            />
+            <div className="flex space-x-4 mt-2">
+              <button
+                onClick={handleChangePassword}
+                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => setShowPasswordForm(false)}
+                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+              >
+                Cancel
+              </button>
+            </div>
+            {passwordMessage && <p className="text-green-600 mt-2">{passwordMessage}</p>}
+            {passwordError && <p className="text-red-600 mt-2">{passwordError}</p>}
+          </div>
+        )}
       </div>
     </div>
   );

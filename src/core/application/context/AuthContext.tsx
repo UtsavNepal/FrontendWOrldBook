@@ -1,5 +1,3 @@
-// src/core/application/context/AuthContext.ts
-
 import { createContext, useContext, ReactNode, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { authRepository } from "../../../infrastructure/repositories/AuthRepository";
@@ -7,7 +5,9 @@ import { saveTokens, clearTokens, isAuthenticated } from "../../../utils/tokenUt
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: any; // Add user object
+  user: any;
+  email: string;
+  setEmail: (email: string) => void;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   signup: (email: string) => Promise<void>;
@@ -18,7 +18,7 @@ interface AuthContextType {
   requestPasswordReset: (email: string) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -30,12 +30,12 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuth, setIsAuth] = useState(isAuthenticated());
-  const [user, setUser] = useState<any>(null); // Add user state
+  const [user, setUser] = useState<any>(null);
+  const [email, setEmail] = useState<string>("");
   const navigate = useNavigate();
 
   useEffect(() => {
     setIsAuth(isAuthenticated());
-    // Fetch user data if authenticated
     if (isAuth) {
       fetchUserData();
     }
@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchUserData = async () => {
     try {
-      const userData = await authRepository.getUserProfile(); // Add this method to your AuthRepository
+      const userData = await authRepository.getUserProfile();
       setUser(userData);
     } catch (error) {
       console.error("Failed to fetch user data:", error);
@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const response = await authRepository.login(email, password);
       saveTokens(response.access, response.refresh);
       setIsAuth(true);
-      fetchUserData(); // Fetch user data after login
+      fetchUserData();
       navigate("/welcome");
     } catch (error) {
       console.error("Login failed:", error);
@@ -66,7 +66,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     clearTokens();
     setIsAuth(false);
-    setUser(null); // Clear user data on logout
+    setUser(null);
+    setEmail("");
     navigate("/login");
   };
 
@@ -100,7 +101,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider
       value={{
         isAuthenticated: isAuth,
-        user, // Include user in the context value
+        user,
+        email,
+        setEmail,
         login,
         logout,
         signup,

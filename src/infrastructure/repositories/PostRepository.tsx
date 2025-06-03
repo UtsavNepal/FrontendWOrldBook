@@ -3,50 +3,54 @@ import { Post, Comment } from "../../core/domain/entities/Post";
 
 export class PostRepository extends BaseRepository<Post> {
   constructor() {
-    super("/profile/posts");
+    super("/profile");
   }
 
   async getAll(): Promise<Post[]> {
-    return this.get<Post[]>("");
+    return this.get<Post[]>("/posts/");
   }
 
   async createPost(data: FormData): Promise<Post> {
-    return this.post<Post>("/", data, {
+    return this.post<Post>("/posts/", data, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
     });
   }
 
-  async updatePost(id: number, data: FormData): Promise<Post> {
-    return this.patch<Post>(`/${id}/`, data, {
+  async updatePost(postId: number, data: FormData): Promise<Post> {
+    return this.patch<Post>(`/posts/${postId}/`, data, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
     });
   }
 
-  async deletePost(id: number): Promise<void> {
-    await this.delete(`/${id}/`);
+  async deletePost(postId: number): Promise<void> {
+    await this.delete(`/posts/${postId}/`);
   }
 
   async toggleLikePost(id: number): Promise<void> {
-    await this.post(`/${id}/like/`);
+    await this.post(`/posts/${id}/like/`);
   }
 
   async getComments(postId: number): Promise<Comment[]> {
-    return this.get<Comment[]>(`/${postId}/comment/`);
+    return this.get<Comment[]>(`/posts/${postId}/comment/`);
   }
 
-  async commentOnPost(postId: number, comment: string): Promise<Comment> {
-    return this.post<Comment>(`/${postId}/comment/`, { comment }); // Use comment instead of content
+  async commentOnPost(postId: number, comment: string, parent?: number): Promise<Comment> {
+    const payload: any = { comment };
+    if (parent) payload.parent = parent;
+    return this.post<Comment>(`/posts/${postId}/comment/`, payload);
   }
 
   async updateComment(commentId: number, comment: string): Promise<Comment> {
-    return this.patch<Comment>(`/comments/${commentId}/`, { comment }); // Use comment instead of content
+    return this.patch<Comment>(`/comments/${commentId}/`, { comment }); 
   }
 
   async deleteComment(commentId: number): Promise<void> {
     await this.delete(`/comments/${commentId}/`);
   }
 }
+
+export const postRepository = new PostRepository();

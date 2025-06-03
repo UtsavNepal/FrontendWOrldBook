@@ -12,6 +12,7 @@ export interface ProfileResponse {
   tagged_posts: any[];
   reactions: any[];
   user: {
+    id:string;
     email: string;
     gender: string;
     joined_at: string;
@@ -29,12 +30,12 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
     try {
       const response = await this.get<ProfileResponse>("/");
 
-      // Check if the response is valid
       if (!response || !response.user) {
         throw new Error("Invalid profile data received from the server");
       }
 
       return {
+        id: Number(response.user.id),
         ...response,
         user: {
           email: response.user.email,
@@ -45,7 +46,7 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
       };
     } catch (error) {
       console.error("Failed to fetch profile:", error);
-      throw error; // Re-throw the error to be handled by the caller
+      throw error;
     }
   }
 
@@ -54,12 +55,12 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
     try {
       const response = await this.patch<ProfileResponse>("/", updatedData);
 
-      // Check if the response is valid
       if (!response || !response.user) {
         throw new Error("Invalid profile data received from the server");
       }
 
       return {
+        id: Number(response.user.id),
         ...response,
         user: {
           email: response.user.email,
@@ -70,7 +71,7 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
       };
     } catch (error) {
       console.error("Failed to update profile:", error);
-      throw error; // Re-throw the error to be handled by the caller
+      throw error;
     }
   }
 
@@ -86,12 +87,12 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
         },
       });
 
-      // Check if the response is valid
       if (!response || !response.user) {
         throw new Error("Invalid profile data received from the server");
       }
 
       return {
+        id: Number(response.user.id),
         ...response,
         user: {
           joined_at: response.user.joined_at,
@@ -102,7 +103,7 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
       };
     } catch (error) {
       console.error("Failed to upload profile picture:", error);
-      throw error; 
+      throw error;
     }
   }
 
@@ -114,6 +115,26 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
       console.error("Failed to delete account:", error);
       throw error;
     }
+  }
+
+  // Fetch a public profile by user ID
+  async getPublicProfile(userId: string | number): Promise<any> {
+    return this.get<any>(`/profiles/${userId}/public/`);
+  }
+
+  // Fetch followers for a user
+  async getFollowers(userId: string | number): Promise<any[]> {
+    return this.get<any[]>(`/profiles/${userId}/followers/`);
+  }
+
+  // Follow a user
+  async followUser(userId: string | number): Promise<void> {
+    await this.post(`/profiles/${userId}/follow/`);
+  }
+
+  // Unfollow a user
+  async unfollowUser(userId: string | number): Promise<void> {
+    await this.delete(`/profiles/${userId}/follow/`);
   }
 }
 
