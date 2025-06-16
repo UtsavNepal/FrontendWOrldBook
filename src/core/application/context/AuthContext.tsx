@@ -2,6 +2,7 @@ import { createContext, useContext, ReactNode, useState, useEffect } from "react
 import { useNavigate } from "react-router-dom";
 import { authRepository } from "../../../infrastructure/repositories/AuthRepository";
 import { saveTokens, clearTokens, isAuthenticated } from "../../../utils/tokenUtils";
+import { profileRepository } from "../../../infrastructure/repositories/ProfileRepository";
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -44,7 +45,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchUserData = async () => {
     try {
       const userData = await authRepository.getUserProfile();
-      setUser(userData);
+      const profileData = await profileRepository.getProfile();
+      setUser({
+        ...userData,
+        profile_picture: profileData.profile_picture
+      });
     } catch (error) {
       console.error("Failed to fetch user data:", error);
     }

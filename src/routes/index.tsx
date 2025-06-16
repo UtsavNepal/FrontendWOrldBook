@@ -9,6 +9,10 @@ import Navbar from "../presentation/components/Navabar";
 import FriendPage from "../presentation/pages/friend/FriendPage";
 import { ProtectedRoute } from "../Private routes/PrivateRoute";
 import UserProfilePage from "../presentation/pages/profile/UserProfilePage";
+import ChatPage from "../presentation/pages/ChatPage";
+import SearchPage from "../presentation/pages/SearchPage";
+import NotificationsPage from "../presentation/pages/NotificationsPage";
+import ViewPostPage from "../presentation/pages/post/ViewPostPage";
 
 export const AppRoutes = () => {
   const location = useLocation();
@@ -18,6 +22,10 @@ export const AppRoutes = () => {
     "/feed",
     "/create-post",
     "/friends",
+    "/chat",
+    "/search",
+    "/notifications",
+    "/post/:id",
   ];
   // Also show on /profile/:id
   const isProfilePage = location.pathname.startsWith("/profile/");
@@ -41,6 +49,10 @@ export const AppRoutes = () => {
           <Route path="/feed" element={<PostFeedPage />} />
           <Route path="/create-post" element={<CreatePostPage />} />
         </Route>
+        <Route path="/chat" element={<ChatPage />} />
+        <Route path="/search" element={<SearchPage />} />
+        <Route path="/post/:id" element={<ViewPostPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
       </Routes>
     </>
   );

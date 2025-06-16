@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../core/application/context/AuthContext";
 import { Modal } from "./modal/modal";
@@ -8,13 +8,19 @@ export const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isResetModalOpen, setIsResetModalOpen] = useState(false); // State to control modal visibility
-  const { login } = useAuth();
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false); 
+  const { login, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
   const successMessage = location.state?.message; 
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/feed", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,14 +28,16 @@ export const LoginPage = () => {
     setLoading(true);
     try {
       await login(email, password);
-      // Navigate to the desired page after successful login
-      navigate("/feed"); // Example: Redirect to the feed page
+      
+      navigate("/feed"); 
     } catch (error) {
-      setError("Invalid email or password. Please try again."); // Display error message
+      setError("Invalid email or password. Please try again."); 
     } finally {
       setLoading(false); // Reset loading state
     }
   };
+
+  if (isAuthenticated) return null;
 
   return (
     <div className="flex h-screen bg-gray-200 items-center justify-center">

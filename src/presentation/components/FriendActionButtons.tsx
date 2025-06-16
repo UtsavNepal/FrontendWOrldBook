@@ -1,17 +1,10 @@
 import React from 'react';
+import { FriendRequest } from '../../core/domain/entities/Friend.entity';
 
 interface User {
-  id: string | number;
+  id: number;
   username: string;
   profile_picture?: string;
-}
-
-interface FriendRequest {
-  id: string;
-  from_user: { id: string | number; username: string };
-  to_user: { id: string | number; username: string };
-  status: 'pending' | 'accepted' | 'rejected';
-  created_at: string;
 }
 
 interface FriendActionButtonsProps {
@@ -20,11 +13,11 @@ interface FriendActionButtonsProps {
   isFriend: boolean;
   receivedRequests: FriendRequest[];
   sentRequests: FriendRequest[];
-  onSend: (userId: string | number) => Promise<void>;
-  onCancel: (requestId: string) => Promise<void>;
-  onAccept: (requestId: string) => Promise<void>;
-  onReject: (requestId: string) => Promise<void>;
-  onUnfriend: (userId: string | number) => Promise<void>;
+  onSend: (userId: number) => Promise<void>;
+  onCancel: (requestId: number) => Promise<void>;
+  onAccept: (requestId: number) => Promise<void>;
+  onReject: (requestId: number) => Promise<void>;
+  onUnfriend: (userId: number) => Promise<void>;
 }
 
 const FriendActionButtons: React.FC<FriendActionButtonsProps> = ({
@@ -39,15 +32,17 @@ const FriendActionButtons: React.FC<FriendActionButtonsProps> = ({
   onReject,
   onUnfriend,
 }) => {
+  console.log('FriendActionButtons: currentUser', currentUser);
+  console.log('FriendActionButtons: targetUser', targetUser);
+
   if (!currentUser || targetUser.id === currentUser.id) return null;
 
-
   const receivedRequest = receivedRequests.find(
-    (req) => String(req.from_user.id) === String(targetUser.id)
+    (req) => req.from_user.id === targetUser.id
   );
 
   const sentRequest = sentRequests.find(
-    (req) => String(req.to_user.id) === String(targetUser.id)
+    (req) => req.to_user.user.id === targetUser.id
   );
 
   if (isFriend) {
@@ -87,7 +82,7 @@ const FriendActionButtons: React.FC<FriendActionButtonsProps> = ({
           className="bg-yellow-500 text-white px-2 py-1 rounded ml-2"
           onClick={() => onCancel(sentRequest.id)}
         >
-          Cancel
+          Cancel Request
         </button>
       </>
     );

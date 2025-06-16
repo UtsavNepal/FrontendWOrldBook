@@ -10,7 +10,8 @@ export interface Comment {
   id: number;
   profile: Profile; 
   comment: string; 
-  created_at: string; 
+  created_at: string;
+  replies?: Comment[];
 }
 export interface Post {
   id: number;

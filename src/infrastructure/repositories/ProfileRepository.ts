@@ -1,6 +1,7 @@
 // ProfileRepository.ts
 import { BaseRepository } from "../base/BaseRepository";
 import { Profile } from "../../core/domain/entities/Profile.entity";
+import { getAccessToken } from '../../utils/tokenUtils';
 
 export interface ProfileResponse {
   profile_picture: string;
@@ -37,7 +38,9 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
       return {
         id: Number(response.user.id),
         ...response,
+        post_photos: (response as any).post_photos ?? [],
         user: {
+          id: Number(response.user.id),
           email: response.user.email,
           gender: response.user.gender,
           joined_at: response.user.joined_at,
@@ -62,7 +65,9 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
       return {
         id: Number(response.user.id),
         ...response,
+        post_photos: (response as any).post_photos ?? [],
         user: {
+          id: Number(response.user.id),
           email: response.user.email,
           gender: response.user.gender,
           joined_at: response.user.joined_at,
@@ -94,7 +99,9 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
       return {
         id: Number(response.user.id),
         ...response,
+        post_photos: (response as any).post_photos ?? [],
         user: {
+          id: Number(response.user.id),
           joined_at: response.user.joined_at,
           gender: response.user.gender,
           email: response.user.email,
@@ -127,6 +134,11 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
     return this.get<any[]>(`/profiles/${userId}/followers/`);
   }
 
+  // Fetch following for a user
+  async getFollowing(userId: string | number): Promise<any[]> {
+    return this.get<any[]>(`/profiles/${userId}/following/`);
+  }
+
   // Follow a user
   async followUser(userId: string | number): Promise<void> {
     await this.post(`/profiles/${userId}/follow/`);
@@ -135,6 +147,11 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
   // Unfollow a user
   async unfollowUser(userId: string | number): Promise<void> {
     await this.delete(`/profiles/${userId}/follow/`);
+  }
+
+  // Fetch notifications for the logged-in user
+  async getNotifications(): Promise<any[]> {
+    return this.get<any[]>("/notifications/");
   }
 }
 

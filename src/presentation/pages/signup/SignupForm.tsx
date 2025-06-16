@@ -14,6 +14,7 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
     email: "",
     password: "",
   });
+
   const handleBack = () => {
      navigate("/"); 
   };
@@ -45,30 +46,74 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
     <div className="max-w-md mx-auto mt-10 p-1 bg-white shadow-md rounded-lg">
       <h2 className="text-2xl font-bold mb-4 text-center">Sign Up</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <input type="text" name="firstname" placeholder="First Name" value={formData.firstname} onChange={handleChange} className="w-full p-2 border rounded" required />
-        <input type="text" name="lastname" placeholder="Last Name" value={formData.lastname} onChange={handleChange} className="w-full p-2 border rounded" required />
-        <input type="date" name="birthday" value={formData.birthday} onChange={handleChange} className="w-full p-2 border rounded" required />
-        <select name="gender" value={formData.gender} onChange={handleChange} className="w-full p-2 border rounded" required>
+        <input 
+          type="text" 
+          name="firstname" 
+          placeholder="First Name" 
+          value={formData.firstname} 
+          onChange={handleChange} 
+          className="w-full p-2 border rounded" 
+          required 
+        />
+        <input 
+          type="text" 
+          name="lastname" 
+          placeholder="Last Name" 
+          value={formData.lastname} 
+          onChange={handleChange} 
+          className="w-full p-2 border rounded" 
+          required 
+        />
+        <input 
+          type="date" 
+          name="birthday" 
+          value={formData.birthday} 
+          onChange={handleChange} 
+          className="w-full p-2 border rounded" 
+          required 
+        />
+        <select 
+          name="gender" 
+          value={formData.gender} 
+          onChange={handleChange} 
+          className="w-full p-2 border rounded" 
+          required
+        >
           <option value="male">Male</option>
           <option value="female">Female</option>
         </select>
-        <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} className="w-full p-2 border rounded" required />
-        <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} className="w-full p-2 border rounded" required />
+        <input 
+          type="email" 
+          name="email" 
+          placeholder="Email" 
+          value={formData.email} 
+          onChange={handleChange} 
+          className="w-full p-2 border rounded" 
+          required 
+        />
+        <input 
+          type="password" 
+          name="password" 
+          placeholder="Password" 
+          value={formData.password} 
+          onChange={handleChange} 
+          className="w-full p-2 border rounded" 
+          required 
+        />
         <button type="submit" className="w-full p-2 bg-blue-500 text-white rounded hover:bg-blue-600">
           Sign Up
         </button>
       </form>
       <div className="space-y-1">
-      <p className="py-2">Already have an account?</p>
-      <button
+        <p className="py-2">Already have an account?</p>
+        <button
           onClick={handleBack}
-          className="mt-4 bg-blue-500 hover:bg-blue-600 text-white  py-2 px-2 rounded space-y-1"
+          className="mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-2 rounded space-y-1"
         >
           Go Back
         </button>
       </div>
     </div>
-    
   );
 };
 

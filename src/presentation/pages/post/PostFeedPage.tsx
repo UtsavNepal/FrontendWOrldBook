@@ -7,7 +7,7 @@ import FullScreenPostModal from "../modal/FullScreenPostModal";
 import { useNavigate } from "react-router-dom";
 import Spinner from "../../ui/Spinner";
 
-const BACKEND_BASE_URL = "http://127.0.0.1:8000";
+const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 const PostFeedPage: React.FC = () => {
   const {
@@ -20,7 +20,7 @@ const PostFeedPage: React.FC = () => {
     deleteComment,
     getComments,
   } = usePostContext();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [openCommentSectionId, setOpenCommentSectionId] = useState<number | null>(null);
   const [newComment, setNewComment] = useState("");
@@ -112,7 +112,7 @@ const PostFeedPage: React.FC = () => {
   };
 
   return (
-    <div className="flex justify-center p-4 pl-20 sm:pl-24 md:pl-32 min-h-screen bg-gray-50">
+    <div className="flex justify-center p-4 pl-20 sm:pl-24 md:pl-56 min-h-screen bg-gray-50">
       <div className="w-full max-w-4xl">
         <h1 className="text-2xl font-bold mb-4">Feed</h1>
         {loading ? (
@@ -127,44 +127,53 @@ const PostFeedPage: React.FC = () => {
                   className="w-10 h-10 rounded-full mr-2"
                 />
                 <span className="font-bold">{post.profile.username}</span>
-                <div className="ml-auto relative">
-                  <button
-                    onClick={() => toggleDropdown(post.id)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    ⋮
-                  </button>
-                  {openDropdownPostId === post.id && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg">
-                      <button
-                        onClick={() => {
-                          setEditingPost(post);
-                          setOpenDropdownPostId(null);
-                        }}
-                        className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleDelete(post.id);
-                          setOpenDropdownPostId(null);
-                        }}
-                        className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </div>
+                {user && post.profile?.user?.id === user.id && (
+                  <div className="ml-auto relative">
+                    <button
+                      onClick={() => toggleDropdown(post.id)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      ⋮
+                    </button>
+                    {openDropdownPostId === post.id && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg">
+                        <button
+                          onClick={() => {
+                            setEditingPost(post);
+                            setOpenDropdownPostId(null);
+                          }}
+                          className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleDelete(post.id);
+                            setOpenDropdownPostId(null);
+                          }}
+                          className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              {post.content && <p className="mb-2">{post.content}</p>}
+              {post.content && (
+                <p
+                  className="mb-2 cursor-pointer hover:underline"
+                  onClick={() => navigate(`/post/${post.id}`)}
+                >
+                  {post.content}
+                </p>
+              )}
               {post.image && (
                 <img
                   src={`${BACKEND_BASE_URL}${post.image}`}
                   alt="Post"
                   className="w-[960px] h-[336px] object-cover rounded cursor-pointer"
-                  onClick={() => setFullScreenPost(post)}
+                  onClick={() => navigate(`/post/${post.id}`)}
                 />
               )}
               <div className="flex space-x-4 mt-2">
@@ -224,7 +233,7 @@ const PostFeedPage: React.FC = () => {
                             Reply
                           </button>
                           {replyToCommentId === comment.id && (
-                            <div className="flex items-center mt-2">
+                            <div className="flex items-center mt-2 ml-4">
                               <input
                                 type="text"
                                 value={replyText}
@@ -238,6 +247,23 @@ const PostFeedPage: React.FC = () => {
                               >
                                 Reply
                               </button>
+                            </div>
+                          )}
+                          {comment.replies && comment.replies.length > 0 && (
+                            <div className="ml-8 mt-2">
+                              {comment.replies.map((reply) => (
+                                <div key={reply.id} className="flex items-center mb-2">
+                                  <img
+                                    src={`${BACKEND_BASE_URL}${reply.profile.profile_picture}`}
+                                    alt={reply.profile.username}
+                                    className="w-6 h-6 rounded-full mr-2"
+                                  />
+                                  <div>
+                                    <span className="font-bold text-sm">{reply.profile.username}</span>
+                                    <p className="text-sm">{reply.comment}</p>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           )}
                         </div>

@@ -7,11 +7,11 @@ import { useAuth } from "./AuthContext";
 interface FriendContextType {
   friendRequests: FriendRequest[];
   otherUsers: Profile[];
-  acceptFriendRequest: (requestId: string) => Promise<void>;
-  rejectFriendRequest: (requestId: string) => Promise<void>;
-  sendFriendRequest: (toUserId: string) => Promise<void>;
-  isRequestSent: (userId: string) => boolean;
-  isRequestReceived: (userId: string) => boolean;
+  acceptFriendRequest: (requestId: number) => Promise<void>;
+  rejectFriendRequest: (requestId: number) => Promise<void>;
+  sendFriendRequest: (toUserId: number) => Promise<void>;
+  isRequestSent: (userId: number) => boolean;
+  isRequestReceived: (userId: number) => boolean;
   getFriendRequests: () => Promise<void>;
   fetchOtherUsersProfiles: () => Promise<void>;
 }
@@ -38,24 +38,24 @@ export const FriendProvider: React.FC<FriendProviderProps> = ({ children }) => {
     setOtherUsers(users);
   };
 
-  const acceptFriendRequest = async (requestId: string) => {
+  const acceptFriendRequest = async (requestId: number) => {
     await friendRepository.acceptFriendRequest(requestId);
     setFriendRequests((prev) => prev.filter((req) => req.id !== requestId));
   };
 
-  const rejectFriendRequest = async (requestId: string) => {
+  const rejectFriendRequest = async (requestId: number) => {
     await friendRepository.rejectFriendRequest(requestId);
     setFriendRequests((prev) => prev.filter((req) => req.id !== requestId));
   };
 
-  const sendFriendRequest = async (toUserId: string) => {
+  const sendFriendRequest = async (toUserId: number) => {
     await friendRepository.sendFriendRequest(toUserId);
     // Fetch the real friend requests from the backend
     await getFriendRequests();
   };
 
   // Check if a request has been sent to a specific user
-  const isRequestSent = (userId: string): boolean => {
+  const isRequestSent = (userId: number): boolean => {
     if (!user) return false;
     return friendRequests.some(
       (request) => request.from_user.id === user.id && request.to_user.id === userId
@@ -63,7 +63,7 @@ export const FriendProvider: React.FC<FriendProviderProps> = ({ children }) => {
   };
 
   // Check if a request has been received from a specific user
-  const isRequestReceived = (userId: string): boolean => {
+  const isRequestReceived = (userId: number): boolean => {
     if (!user) return false;
     return friendRequests.some(
       (request) => request.to_user.id === user.id && request.from_user.id === userId

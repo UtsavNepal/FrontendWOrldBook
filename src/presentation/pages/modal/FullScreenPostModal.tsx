@@ -23,7 +23,7 @@ const FullScreenPostModal: React.FC<FullScreenPostModalProps> = ({ post, onClose
           {post.content && <p>{post.content}</p>}
           {post.image && (
             <img
-              src={`http://127.0.0.1:8000${post.image}`}
+              src={`${import.meta.env.VITE_BACKEND_URL}${post.image}`}
               alt="Post"
               className="w-full h-auto rounded"
             />
@@ -43,7 +43,7 @@ const FullScreenPostModal: React.FC<FullScreenPostModalProps> = ({ post, onClose
             {post.comments.map((comment) => (
               <div key={comment.id} className="flex items-center space-x-2 mb-2">
                 <img
-                  src={`http://127.0.0.1:8000${comment.profile.profile_picture}`}
+                  src={`${import.meta.env.VITE_BACKEND_URL}${comment.profile.profile_picture}`}
                   alt={comment.profile.username}
                   className="w-8 h-8 rounded-full"
                 />

@@ -16,7 +16,7 @@ const CreatePostPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex justify-center items-start bg-gray-50 pl-20 sm:pl-24 md:pl-32">
+    <div className="min-h-screen flex justify-center items-start bg-gray-50 pl-20 sm:pl-24 md:pl-56">
       <div className="w-full max-w-xl p-2 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg shadow-md mt-8 mx-auto">
         <h1 className="text-2xl font-bold mb-4 text-center">Create Post</h1>
         <form onSubmit={handleSubmit} className="space-y-4">

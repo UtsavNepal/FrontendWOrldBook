@@ -1,5 +1,3 @@
-// src/presentation/components/EditPostModal.tsx
-
 import React, { useState } from "react";
 import { usePostContext } from "../../../core/application/context/PostContext";
 import { Post } from "../../../core/domain/entities/Post";

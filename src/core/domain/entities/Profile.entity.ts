@@ -8,14 +8,20 @@ export interface Profile {
     posts: any[];
     tagged_posts: any[];
     reactions: any[];
+    post_photos: any[];
     user: {
-    
+      id: number;
       joined_at: string;
       gender: string;
       email: string;
       birthday: string;
     };
-    friends?: any[];
+    friends?: {
+      id: number;
+      user: {
+        id: number;
+      };
+    }[];
     total_followers?: number;
     total_following?: number;
     is_friend?: boolean;

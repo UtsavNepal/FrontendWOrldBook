@@ -51,6 +51,10 @@ export class PostRepository extends BaseRepository<Post> {
   async deleteComment(commentId: number): Promise<void> {
     await this.delete(`/comments/${commentId}/`);
   }
+
+  async getById(postId: string | number): Promise<Post> {
+    return this.get<Post>(`/posts/${postId}/`);
+  }
 }
 
 export const postRepository = new PostRepository();
