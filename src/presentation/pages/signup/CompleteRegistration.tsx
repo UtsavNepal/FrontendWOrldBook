@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../../core/application/context/AuthContext";
 import { userRepository } from "../../../infrastructure/repositories/userRepository";
 
-const CompleteRegistration: React.FC<{ setStep: (step: "signup" | "verify" | "complete") => void }> = ({ setStep }) => {
+const CompleteRegistration: React.FC<{ setStep: (step: "signup" | "verify" | "complete") => void }> = ({  }) => {
   const navigate = useNavigate();
   const { email } = useContext(AuthContext) ?? { email: "" }; 
   const [formData, setFormData] = useState({

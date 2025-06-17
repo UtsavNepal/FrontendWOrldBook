@@ -1,9 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import ChatRepository from "../../../infrastructure/repositories/ChatRepository";
 import { 
   ChatState, 
   Conversation, 
-  Message, 
   User, 
   SendMessagePayload, 
   CreateConversationPayload, 
@@ -193,11 +192,6 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       }));
     }
   };
-
-  useEffect(() => {
-    fetchConversations();
-    fetchUsers();
-  }, []);
 
   return (
     <ChatContext.Provider

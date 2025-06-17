@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useChatContext } from "../../core/application/context/ChatContext";
 import { useAuth } from "../../core/application/context/AuthContext";
 import { Profile, User } from "../../core/domain/entities/Chat.entity";
+import MainLayout from "../components/MainLayout";
 
 const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -49,9 +50,11 @@ const ChatPage: React.FC = () => {
     deleteConversation,
     reactToMessage,
     profile,
+    fetchConversations,
+    fetchUsers,
   } = useChatContext();
   
-  const { user } = useAuth();
+  const { user, isAuthLoading } = useAuth();
   const [message, setMessage] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -71,7 +74,6 @@ const ChatPage: React.FC = () => {
     }
   };
 
-  // Clean up preview URL when component unmounts
   useEffect(() => {
     return () => {
       if (imagePreview) {
@@ -85,6 +87,13 @@ const ChatPage: React.FC = () => {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, selectedConversation]);
+
+  useEffect(() => {
+    if (user) {
+      fetchConversations();
+      fetchUsers();
+    }
+  }, [user]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,8 +138,6 @@ const ChatPage: React.FC = () => {
     ? selectedConversation.participants.find(p => p.id !== user?.id)
     : null;
 
-  const isFriend = chatPartner && user?.friends?.includes(chatPartner.id);
-
   const handleDeleteConversation = async (id: number) => {
     if (window.confirm("Are you sure you want to delete this conversation?")) {
       await deleteConversation(id);
@@ -144,282 +151,261 @@ const ChatPage: React.FC = () => {
     return matchedProfile?.id;
   };
 
+  if (isAuthLoading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
   if (!user) {
     return <div className="flex items-center justify-center h-screen">Please login to access chat</div>;
   }
 
   return (
-    <div className="fixed inset-0 flex bg-gray-50 pl-20 sm:pl-24 md:pl-56 overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-72 bg-white border-r h-screen flex flex-col">
-        <div className="p-4 bg-white z-10 sticky top-0">
-          <h2 className="text-lg font-bold mb-4">Chats</h2>
-        </div>
-       
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
-          <h3 className="font-semibold mb-2">Users</h3>
-          <ul>
-  {users.filter(u => u.id !== user.id).map(u => (
-  <li key={u.id}>
-    <button
-      className={`w-full text-left py-1 px-2 rounded flex items-center gap-2 ${
-        selectedConversation?.participants.some(p => p.id === u.id) 
-          ? "bg-blue-100" 
-          : "hover:bg-blue-50"
-      }`}
-      onClick={() => handleStartChat(u.id)}
-    >
-      <div className="relative">
-        <img
-  src={getUserProfilePicture(u.id, profile)}
-  alt={getFullName(u)}
-  className="w-8 h-8 rounded-full object-cover"
-/>
-      </div>
-      <span>{getFullName(u)}</span>
-    </button>
-  </li>
-))}
-</ul>
-
-          <div className="pt-4">
-            <h3 className="font-semibold mb-2">Conversations</h3>
+    <MainLayout>
+      <div className="flex flex-col md:flex-row bg-gray-50 overflow-hidden h-screen w-full">
+        {/* Sidebar */}
+        <aside className="w-full md:w-72 bg-white border-r h-64 md:h-screen flex flex-col">
+          <div className="p-4 bg-white z-10 sticky top-0">
+            <h2 className="text-lg sm:text-xl font-bold mb-4">Chats</h2>
           </div>
-          <ul>
-            {conversations.map(conv => {
-              const partner = !conv.is_group 
-                ? conv.participants.find(p => p.id !== user.id) 
-                : null;
-              return (
-                <li key={conv.id}>
+          <div className="flex-1 min-h-0 overflow-y-auto px-2 sm:px-4 pb-4">
+            <h3 className="font-semibold mb-2 text-base sm:text-lg">Users</h3>
+            <ul>
+              {users.filter(u => u.id !== user.id).map(u => (
+                <li key={u.id}>
                   <button
-                    className={`w-full text-left py-1 px-2 rounded flex items-center gap-2 ${
-                      selectedConversation?.id === conv.id 
-                        ? "bg-blue-100" 
-                        : "hover:bg-gray-100"
+                    className={`w-full text-left py-1 px-2 rounded flex items-center gap-2 text-sm sm:text-base ${
+                      selectedConversation?.participants.some(p => p.id === u.id)
+                        ? "bg-blue-100"
+                        : "hover:bg-blue-50"
                     }`}
-                    onClick={() => selectConversation(conv)}
+                    onClick={() => handleStartChat(u.id)}
                   >
-                    {partner && (
-                      <img 
-  src={getUserProfilePicture(partner.id, profile)} 
-  alt={getFullName(partner)} 
-  className="w-8 h-8 rounded-full object-cover"
-/>
-
-                    )}
-                    <span>
-                      {conv.is_group 
-                        ? conv.name 
-                        : partner 
-                          ? getFullName(partner) 
-                          : "Unknown"}
-                    </span>
+                    <div className="relative">
+                      <img
+                        src={getUserProfilePicture(u.id, profile)}
+                        alt={getFullName(u)}
+                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
+                      />
+                    </div>
+                    <span>{getFullName(u)}</span>
                   </button>
                 </li>
-              );
-            })}
-          </ul>
-        </div>
-
-        {selectedConversation && (
-          <div className="flex-shrink-0 p-4">
-            <button
-              className="w-full bg-red-100 text-red-600 py-2 rounded hover:bg-red-200"
-              onClick={() => handleDeleteConversation(selectedConversation.id)}
-            >
-              Delete Conversation
-            </button>
-          </div>
-        )}
-      </aside>
-
-      {/* Main chat area */}
-      <main className="flex-1 flex flex-col h-screen">
-        {/* Chat header */}
-        {selectedConversation && (
-          <div className="flex items-center gap-4 border-b p-4 bg-white shadow-sm flex-shrink-0 relative">
-            {chatPartner && (
-              <img 
-  src={getUserProfilePicture(chatPartner.id, profile)} 
-  alt={getFullName(chatPartner)} 
-  className="w-10 h-10 rounded-full object-cover" 
-/>
-            )}
-            <span 
-              className="text-lg font-bold cursor-pointer relative" 
-              onClick={() => setHeaderDropdownOpen(v => !v)}
-            >
-              {selectedConversation.is_group
-                ? selectedConversation.name
-                : chatPartner
-                  ? getFullName(chatPartner)
-                  : ""}
-              
-              {headerDropdownOpen && chatPartner && (
-                <div className="absolute left-0 top-full mt-2 bg-white border rounded shadow z-20 min-w-[160px]">
-                  <button
-                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                    onClick={() => {
-                      const profileId = getProfileIdByUserId(chatPartner.id);
-                      if (profileId) {
-                        window.location.href = `/profile/${profileId}`;
-                      } else {
-                        alert('Profile not found');
-                      }
-                      setHeaderDropdownOpen(false);
-                    }}
-                  >
-                    View Profile
-                  </button>
-                </div>
-              )}
-            </span>
-          </div>
-        )}
-
-        {/* Messages area */}
-        <div className="flex-1 min-h-0 overflow-y-auto p-4 bg-gray-50">
-          {loading ? (
-            <div className="flex justify-center items-center h-full">
-              <div>Loading messages...</div>
+              ))}
+            </ul>
+            <div className="pt-4">
+              <h3 className="font-semibold mb-2 text-base sm:text-lg">Conversations</h3>
             </div>
-          ) : selectedConversation ? (
-            <>
-              {messages.length === 0 ? (
-                <div className="text-gray-400 text-center my-8">
-                  No messages yet. Start the conversation!
-                </div>
-              ) : (
-                messages.map(msg => {
-                  const isSent = msg.sender.id === user.id;
-                  return (
-                    <div key={msg.id} className={`mb-2 flex ${isSent ? "justify-end" : "justify-start"}`}>
-                      <div className={`flex items-end gap-2 ${isSent ? "flex-row-reverse" : ""}`}>
+            <ul>
+              {conversations.map(conv => {
+                const partner = !conv.is_group
+                  ? conv.participants.find(p => p.id !== user.id)
+                  : null;
+                return (
+                  <li key={conv.id}>
+                    <button
+                      className={`w-full text-left py-1 px-2 rounded flex items-center gap-2 text-sm sm:text-base ${
+                        selectedConversation?.id === conv.id
+                          ? "bg-blue-100"
+                          : "hover:bg-gray-100"
+                      }`}
+                      onClick={() => selectConversation(conv)}
+                    >
+                      {partner && (
                         <img
-  src={getUserProfilePicture(msg.sender.id, profile)}
-  alt={getFullName(msg.sender)}
-  className="w-8 h-8 rounded-full object-cover"
-/>
-                        <div className={`rounded-lg p-2 max-w-xs ${isSent ? "bg-blue-100" : "bg-gray-200"}`}>
-                          <div className="text-xs text-gray-500 mb-1">
-                            {getFullName(msg.sender)}
-                          </div>
-                          {msg.text && <div className="whitespace-pre-wrap">{msg.text}</div>}
-                          {msg.image && (
-                            <img src={msg.image} alt="attachment" className="max-h-40 rounded mt-2" />
-                          )}
-                          {msg.gif_url && (
-                            <img src={msg.gif_url} alt="gif" className="max-h-40 rounded mt-2" />
-                          )}
-                          <div className="flex items-center mt-1 space-x-1 relative">
-                            {msg.reactions.map(r => (
-                              <span key={r.id} className="text-lg cursor-pointer">
-                                {r.emoji}
-                              </span>
-                            ))}
-                            <button
-                              className="ml-2 text-xs text-gray-400 hover:text-gray-600"
-                              type="button"
-                              onClick={() => setOpenReactionDropdown(
-                                openReactionDropdown === msg.id ? null : msg.id
-                              )}
-                            >
-                              ⋯
-                            </button>
-                            {openReactionDropdown === msg.id && (
-                              <div className="absolute z-10 bottom-full left-0 bg-white border rounded shadow p-2 flex gap-2">
-                                {emojiOptions.map(emoji => (
-                                  <button
-                                    key={emoji}
-                                    className="text-lg"
-                                    type="button"
-                                    onClick={() => {
-                                      reactToMessage(msg.id, emoji);
-                                      setOpenReactionDropdown(null);
-                                    }}
-                                  >
-                                    {emoji}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-              <div ref={messagesEndRef} />
-            </>
-          ) : (
-            <div className="text-gray-400 text-center mt-20">
-              Select a conversation or user to start chatting.
-            </div>
-          )}
-        </div>
-
-        {/* Message input area */}
-        <div className="border-t p-4 bg-white">
-          <form onSubmit={handleSend} className="flex flex-col gap-2">
-            {/* Image preview */}
-            {imagePreview && (
-              <div className="relative w-32 h-32 mb-2">
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="w-full h-full object-cover rounded"
-                />
+                          src={getUserProfilePicture(partner.id, profile)}
+                          alt={getFullName(partner)}
+                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
+                        />
+                      )}
+                      <span>
+                        {conv.is_group
+                          ? conv.name
+                          : partner
+                          ? getFullName(partner)
+                          : "Unknown"}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            {selectedConversation && (
+              <div className="flex-shrink-0 p-4">
                 <button
-                  type="button"
-                  onClick={() => {
-                    setImage(null);
-                    setImagePreview(null);
-                  }}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                  className="w-full bg-red-100 text-red-600 py-2 rounded hover:bg-red-200 text-sm sm:text-base"
+                  onClick={() => handleDeleteConversation(selectedConversation.id)}
                 >
-                  ×
+                  Delete Conversation
                 </button>
               </div>
             )}
-            
-            <div className="flex gap-2">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageSelect}
-                className="hidden"
-                id="image-upload"
-              />
-              <label
-                htmlFor="image-upload"
-                className="bg-gray-100 p-2 rounded cursor-pointer hover:bg-gray-200"
+          </div>
+        </aside>
+        {/* Main chat area */}
+        <div className="flex-1 flex flex-col h-[calc(100vh-16rem)] md:h-screen">
+          {/* Chat header */}
+          {selectedConversation && (
+            <div className="flex items-center gap-4 border-b p-2 sm:p-4 bg-white shadow-sm flex-shrink-0 relative">
+              {chatPartner && (
+                <img
+                  src={getUserProfilePicture(chatPartner.id, profile)}
+                  alt={getFullName(chatPartner)}
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
+                />
+              )}
+              <span
+                className="text-base sm:text-lg font-bold cursor-pointer relative"
+                onClick={() => setHeaderDropdownOpen(v => !v)}
               >
-                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </label>
-              
-              <input
-                type="text"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-1 border rounded px-3 py-2 focus:outline-none focus:border-blue-500"
-              />
-              
-              <button
-                type="submit"
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-              >
-                Send
-              </button>
+                {selectedConversation.is_group
+                  ? selectedConversation.name
+                  : chatPartner
+                  ? getFullName(chatPartner)
+                  : ""}
+                {headerDropdownOpen && chatPartner && (
+                  <div className="absolute left-0 top-full mt-2 bg-white border rounded shadow z-20 min-w-[160px]">
+                    <button
+                      className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                      onClick={() => {
+                        const profileId = getProfileIdByUserId(chatPartner.id);
+                        if (profileId) {
+                          window.location.href = `/profile/${profileId}`;
+                        } else {
+                          alert('Profile not found');
+                        }
+                        setHeaderDropdownOpen(false);
+                      }}
+                    >
+                      View Profile
+                    </button>
+                  </div>
+                )}
+              </span>
             </div>
-          </form>
+          )}
+          {/* Messages area */}
+          <div className="flex-1 overflow-y-auto p-2 sm:p-4 bg-gray-50">
+            {loading ? (
+              <div className="flex justify-center items-center h-full">
+                <div>Loading messages...</div>
+              </div>
+            ) : selectedConversation ? (
+              <>
+                {messages.length === 0 ? (
+                  <div className="text-gray-400 text-center my-8 text-sm sm:text-base">
+                    No messages yet. Start the conversation!
+                  </div>
+                ) : (
+                  messages.map(msg => {
+                    const isSent = msg.sender.id === user.id;
+                    return (
+                      <div key={msg.id} className={`mb-2 flex ${isSent ? "justify-end" : "justify-start"}`}>
+                        <div className={`flex items-end gap-2 ${isSent ? "flex-row-reverse" : ""}`}>
+                          <img
+                            src={getUserProfilePicture(msg.sender.id, profile)}
+                            alt={getFullName(msg.sender)}
+                            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
+                          />
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1">
+                              {getFullName(msg.sender)}
+                            </div>
+                            {msg.text && <div className="whitespace-pre-wrap text-sm sm:text-base">{msg.text}</div>}
+                            {msg.image && (
+                              <img src={msg.image} alt="attachment" className="max-h-40 rounded mt-2" />
+                            )}
+                            {msg.gif_url && (
+                              <img src={msg.gif_url} alt="gif" className="max-h-40 rounded mt-2" />
+                            )}
+                            <div className="flex items-center mt-1 space-x-1 relative">
+                              {msg.reactions.map(r => (
+                                <span key={r.id} className="text-lg cursor-pointer">
+                                  {r.emoji}
+                                </span>
+                              ))}
+                              <button
+                                className="ml-2 text-xs text-gray-400 hover:text-gray-600"
+                                type="button"
+                                onClick={() => setOpenReactionDropdown(
+                                  openReactionDropdown === msg.id ? null : msg.id
+                                )}
+                              >
+                                ⋯
+                              </button>
+                              {openReactionDropdown === msg.id && (
+                                <div className="absolute z-10 bottom-full left-0 bg-white border rounded shadow p-2 flex gap-2">
+                                  {emojiOptions.map(emoji => (
+                                    <button
+                                      key={emoji}
+                                      className="text-lg"
+                                      type="button"
+                                      onClick={() => {
+                                        reactToMessage(msg.id, emoji);
+                                        setOpenReactionDropdown(null);
+                                      }}
+                                    >
+                                      {emoji}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={messagesEndRef} />
+              </>
+            ) : (
+              <div className="text-gray-400 text-center mt-20 text-sm sm:text-base">
+                Select a conversation or user to start chatting.
+              </div>
+            )}
+          </div>
+          {/* Message input area */}
+          {selectedConversation && (
+            <>
+              {imagePreview && (
+                <div className="flex items-center gap-2 p-2 sm:p-4 bg-white border-t border-b">
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-20 h-20 sm:w-28 sm:h-28 object-cover rounded shadow"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImage(null);
+                        setImagePreview(null);
+                      }}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                      aria-label="Remove image"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <span className="text-gray-500 text-sm">Image selected</span>
+                </div>
+              )}
+              <form onSubmit={handleSend} className="flex items-center gap-2 p-2 sm:p-4 bg-white border-t flex-shrink-0">
+                <input
+                  type="text"
+                  value={message}
+                  onChange={e => setMessage(e.target.value)}
+                  placeholder="Type a message..."
+                  className="flex-1 p-2 sm:p-3 rounded border text-sm sm:text-base"
+                />
+                <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" id="chat-image-upload" />
+                <label htmlFor="chat-image-upload" className="cursor-pointer text-blue-500 text-sm sm:text-base">📎</label>
+                <button type="submit" className="bg-blue-500 text-white px-3 py-2 rounded text-sm sm:text-base">Send</button>
+              </form>
+            </>
+          )}
         </div>
-      </main>
-    </div>
+      </div>
+    </MainLayout>
   );
 };
 

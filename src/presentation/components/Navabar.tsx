@@ -29,7 +29,7 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed top-0 left-0 h-screen w-20 sm:w-24 md:w-56 bg-white border-r border-gray-200 z-50 flex flex-col items-center py-6 shadow-md">
+    <nav className="h-screen w-20 sm:w-24 md:w-56 bg-white border-r border-gray-200 flex flex-col items-center py-6 shadow-md">
       <div className="flex flex-col items-center w-full space-y-2">
         {navItems.map((item) => (
           <Link

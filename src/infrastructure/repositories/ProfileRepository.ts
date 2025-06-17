@@ -1,7 +1,6 @@
 // ProfileRepository.ts
 import { BaseRepository } from "../base/BaseRepository";
 import { Profile } from "../../core/domain/entities/Profile.entity";
-import { getAccessToken } from '../../utils/tokenUtils';
 
 export interface ProfileResponse {
   profile_picture: string;

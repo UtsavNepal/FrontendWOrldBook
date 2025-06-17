@@ -17,6 +17,7 @@ interface AuthContextType {
   resetPassword: (email: string, newPassword: string) => Promise<void>;
   verifyResetOTP: (email: string, otp: string) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
+  isAuthLoading: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,14 +34,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuth, setIsAuth] = useState(isAuthenticated());
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState<string>("");
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    setIsAuth(isAuthenticated());
-    if (isAuth) {
-      fetchUserData();
-    }
-  }, [isAuth]);
+    const checkAuth = async () => {
+      setIsAuth(isAuthenticated());
+      if (isAuthenticated()) {
+        await fetchUserData();
+      }
+      setIsAuthLoading(false);
+    };
+    checkAuth();
+  }, []);
 
   const fetchUserData = async () => {
     try {
@@ -117,6 +123,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         resetPassword,
         verifyResetOTP,
         requestPasswordReset,
+        isAuthLoading,
       }}
     >
       {children}
