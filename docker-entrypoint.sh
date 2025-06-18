@@ -2,7 +2,7 @@
 set -e
 
 # Export PORT if not set
-export PORT=${PORT:-80}
+export PORT=${PORT:-3000}
 
 # Replace environment variables in nginx config
 envsubst '${PORT}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf

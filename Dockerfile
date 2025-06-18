@@ -19,5 +19,5 @@ RUN mkdir -p /etc/nginx/templates && \
     chown -R nginx:nginx /usr/share/nginx/html && \
     chmod -R 755 /usr/share/nginx/html
 
-EXPOSE $PORT
+EXPOSE 3000
 ENTRYPOINT ["/docker-entrypoint.sh"] 
