@@ -38,6 +38,13 @@ echo "=== Backend Content Test Complete ==="
 echo "Testing Nginx configuration..."
 nginx -t
 
+# Handle shutdown gracefully
+trap 'echo "Received shutdown signal, stopping Nginx..."; nginx -s quit; exit 0' SIGTERM SIGINT
+
 # Start nginx in foreground
 echo "Starting Nginx..."
-exec nginx -g 'daemon off;' 
+nginx -g 'daemon off;' &
+nginx_pid=$!
+
+# Wait for nginx to exit
+wait $nginx_pid 
