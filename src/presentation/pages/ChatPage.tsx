@@ -19,11 +19,8 @@ const getUserProfilePicture = (userId: number, profiles: Profile[]): string => {
     return user.profile_picture ? getImageUrl(user.profile_picture) : '/default-avatar.png';
   }
 
-
   const matchedProfile = profiles.find(p => p.user?.id === userId);
   const profilePic = matchedProfile?.profile_picture;
-
-  console.log('User ID:', userId, '| Matched Profile:', matchedProfile, '| Final Image URL:', profilePic);
 
   return profilePic ? getImageUrl(profilePic) : '/default-avatar.png';
 };

@@ -1,4 +1,4 @@
-import axios, {  AxiosResponse, AxiosError, InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosResponse, AxiosError, InternalAxiosRequestConfig } from "axios";
 import { clearTokens, getAccessToken, refreshAccessToken } from "./tokenUtils";
 
 

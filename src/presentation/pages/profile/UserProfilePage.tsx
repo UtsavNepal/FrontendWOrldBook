@@ -2,14 +2,13 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../core/application/context/AuthContext";
 import { Profile } from "../../../core/domain/entities/Profile.entity";
-
 import { profileRepository } from '../../../infrastructure/repositories/ProfileRepository';
+import MainLayout from "../../components/MainLayout";
 import { friendRepository } from '../../../infrastructure/repositories/FriendRepository';
 import { postRepository } from '../../../infrastructure/repositories/PostRepository';
 import Spinner from "../../ui/Spinner";
 import { Modal } from '../../pages/modal/modal';
 import UserList from '../../components/UserList';
-import MainLayout from "../../components/MainLayout";
 
 const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -18,23 +17,22 @@ const UserProfilePage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [posts, setPosts] = useState<any[]>([]);
- 
-  const [loading, setLoading] = useState(true);
-  const [commentText, setCommentText] = useState("");
-  const [commentingPostId, setCommentingPostId] = useState<number | null>(null);
-  const [friendRequestId, setFriendRequestId] = useState<string | null>(null);
-  const [following, setFollowing] = useState(false);
   const [receivedRequests, setReceivedRequests] = useState<any[]>([]);
   const [sentRequests, setSentRequests] = useState<any[]>([]);
-  const [showFollowersModal, setShowFollowersModal] = useState(false);
-  const [showFollowingModal, setShowFollowingModal] = useState(false);
+  const [following, setFollowing] = useState(false);
+  const [showFollowDropdown, setShowFollowDropdown] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [followersList, setFollowersList] = useState<any[]>([]);
   const [followingList, setFollowingList] = useState<any[]>([]);
   const [loadingFollowers, setLoadingFollowers] = useState(false);
   const [loadingFollowing, setLoadingFollowing] = useState(false);
-  const [showFollowDropdown, setShowFollowDropdown] = useState(false);
-
+  const [friendRequestId, setFriendRequestId] = useState<string | null>(null);
+  const [commentText, setCommentText] = useState("");
+  const [commentingPostId, setCommentingPostId] = useState<number | null>(null);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
+  const [posts, setPosts] = useState<any[]>([]);
+ 
   const receivedRequestFromUser = receivedRequests.find((r: any) => r.from_user.id === Number(id));
   const sentRequestToUser = sentRequests.find((r: any) => r.to_user.id === Number(id));
 
@@ -53,13 +51,9 @@ const UserProfilePage: React.FC = () => {
     const fetchProfile = async () => {
       setLoading(true);
       setProfile(null);
-      setPosts([]);
-      setReceivedRequests([]);
-      setSentRequests([]);
       try {
         const res = await profileRepository.getPublicProfile(id!);
         setProfile(res);
-        setPosts(res.post_photos || []);
       } catch (err) {
         setProfile(null);
       } finally {
@@ -67,8 +61,6 @@ const UserProfilePage: React.FC = () => {
       }
     };
     const fetchFriendRequestStatus = async () => {
-      setReceivedRequests([]);
-      setSentRequests([]);
       try {
         const received = await friendRepository.listFriendRequests();
         setReceivedRequests(received);
@@ -171,17 +163,9 @@ const UserProfilePage: React.FC = () => {
   const refreshData = async () => {
     setLoading(true);
     setProfile(null);
-    setPosts([]);
-    setReceivedRequests([]);
-    setSentRequests([]);
     try {
       const res = await profileRepository.getPublicProfile(id!);
       setProfile(res);
-      setPosts(res.post_photos || []);
-      const received = await friendRepository.listFriendRequests();
-      setReceivedRequests(received);
-      const sent = await friendRepository.listSentFriendRequests();
-      setSentRequests(sent);
     } catch (err) {
       setProfile(null);
     } finally {

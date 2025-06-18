@@ -20,6 +20,21 @@ export const LoginPage = () => {
     if (isAuthenticated) {
       navigate("/feed", { replace: true });
     }
+    // Prevent scrolling
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.height = '100%';
+    document.body.style.height = '100%';
+    document.body.style.margin = '0';
+    
+    return () => {
+      // Cleanup when component unmounts
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.documentElement.style.height = '';
+      document.body.style.height = '';
+      document.body.style.margin = '';
+    };
   }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,78 +55,69 @@ export const LoginPage = () => {
   if (isAuthenticated) return null;
 
   return (
-    <div className="flex h-screen bg-gray-200 items-center justify-center">
-      <div className="w-2/3 flex items-center">
-        {/* Left Section */}
-        <div className="w-1/2 p-8">
-          <h1 className="text-5xl font-bold text-blue-500">WorldBook</h1>
-          <p className="text-lg mt-4 text-gray-700">
-            Connect with friends, family, and the world around you
-          </p>
-        </div>
+    <div className="fixed inset-0 bg-gray-200 flex flex-col items-center justify-center">
+      {/* Container that changes layout based on screen size */}
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col lg:flex-row items-center justify-center gap-8 m-0">
+          {/* Left Section - Full width on mobile, half width on desktop */}
+          <div className="w-full lg:w-1/2 text-center lg:text-left m-0">
+            <h1 className="text-4xl sm:text-5xl font-bold text-blue-500 m-0">WorldBook</h1>
+            <p className="text-base sm:text-lg mt-4 text-gray-700 m-0">
+              Connect with friends, family, and the world around you
+            </p>
+          </div>
 
-        {/* Right Section */}
-        <div className="w-1/2 bg-gray-100 p-8 rounded-lg shadow-lg">
-          {/* Success Message */}
-          {successMessage && <p style={{ color: "green" }}>{successMessage}</p>}
+          {/* Right Section - Full width on mobile, half width on desktop */}
+          <div className="w-full lg:w-1/2 m-0">
+            <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 m-0">
+              {/* Success Message */}
+              {successMessage && <p className="text-green-600 text-center m-0">{successMessage}</p>}
 
-          {/* Error Message */}
-          {error && <p style={{ color: "red" }}>{error}</p>}
+              {/* Error Message */}
+              {error && <p className="text-red-600 text-center m-0">{error}</p>}
 
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex space-x-1">
-              <input
-                type="email"
-                placeholder="Email Address"
-                value={email}
-                className="w-2/2 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+              {/* Login Form */}
+              <form onSubmit={handleSubmit} className="space-y-4 m-0">
+                <div className="m-0">
+                  <input
+                    type="email"
+                    placeholder="Email Address"
+                    value={email}
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 m-0"
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="m-0">
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 m-0"
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition-colors m-0"
+                  disabled={loading}
+                >
+                  {loading ? "Logging in..." : "Log In"}
+                </button>
+              </form>
+
+              <p className="mt-4 text-center text-sm text-gray-600 m-0">
+                Don't have an account?{" "}
+                <button
+                  onClick={() => navigate("/register")}
+                  className="text-blue-500 hover:text-blue-600 m-0"
+                >
+                  Sign Up
+                </button>
+              </p>
             </div>
-            <div className="flex space-x-1">
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                className="w-2/2 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className={`w-full p-2 text-white rounded transition ${
-                loading ? "bg-gray-400 cursor-not-allowed" : "bg-purple-500 hover:bg-purple-600"
-              }`}
-              disabled={loading}
-            >
-              {loading ? "Logging in..." : "Login"}
-            </button>
-          </form>
-
-          {/* Reset Password Link */}
-          <p className="text-center text-sm mt-7">
-            Forget password?{" "}
-            <button
-              className="text-blue-500 hover:underline"
-              onClick={() => setIsResetModalOpen(true)}
-            >
-              Reset
-            </button>
-          </p>
-
-          {/* Signup Link */}
-          <p className="text-center text-sm mt-4">
-            Don't have an account?{" "}
-            <button
-              className="text-blue-500 hover:underline"
-              onClick={() => navigate("/signup")}
-            >
-              Signup
-            </button>
-          </p>
+          </div>
         </div>
       </div>
 
