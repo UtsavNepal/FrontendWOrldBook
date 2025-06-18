@@ -110,7 +110,7 @@ export const LoginPage = () => {
               <p className="mt-4 text-center text-sm text-gray-600 m-0">
                 Don't have an account?{" "}
                 <button
-                  onClick={() => navigate("/register")}
+                  onClick={() => navigate("/signup")}
                   className="text-blue-500 hover:text-blue-600 m-0"
                 >
                   Sign Up
