@@ -31,7 +31,7 @@ const UserProfilePage: React.FC = () => {
   const [commentingPostId, setCommentingPostId] = useState<number | null>(null);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [showFollowingModal, setShowFollowingModal] = useState(false);
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts] = useState<any[]>([]);
  
   const receivedRequestFromUser = receivedRequests.find((r: any) => r.from_user.id === Number(id));
   const sentRequestToUser = sentRequests.find((r: any) => r.to_user.id === Number(id));
