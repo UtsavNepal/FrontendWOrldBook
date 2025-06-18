@@ -23,24 +23,30 @@ RUN echo "=== Build Output ===" && \
 # Production stage
 FROM nginx:alpine
 
+# Install necessary packages
+RUN apk add --no-cache bash curl
+
 # Copy built files
 COPY --from=build /app/dist /usr/share/nginx/html
 
 # Copy nginx configuration
-COPY nginx.conf /etc/nginx/templates/default.conf.template
+COPY nginx.conf /etc/nginx/nginx.conf
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 
 # Setup nginx
-RUN mkdir -p /etc/nginx/templates && \
-    mkdir -p /etc/nginx/conf.d && \
+RUN mkdir -p /var/cache/nginx && \
+    mkdir -p /var/log/nginx && \
+    mkdir -p /var/run && \
     chmod +x /docker-entrypoint.sh && \
     chown -R nginx:nginx /usr/share/nginx/html && \
-    chmod -R 755 /usr/share/nginx/html && \
-    echo "=== Nginx Setup ===" && \
-    ls -la /usr/share/nginx/html && \
-    echo "=== Contents of nginx html directory ===" && \
-    find /usr/share/nginx/html -type f && \
-    echo "=== Setup completed ==="
+    chown -R nginx:nginx /var/cache/nginx && \
+    chown -R nginx:nginx /var/log/nginx && \
+    chown -R nginx:nginx /var/run && \
+    chmod -R 755 /usr/share/nginx/html
 
-EXPOSE 3000
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-3000}/ || exit 1
+
+EXPOSE ${PORT:-3000}
 ENTRYPOINT ["/docker-entrypoint.sh"] 
