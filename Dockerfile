@@ -42,7 +42,12 @@ RUN mkdir -p /var/cache/nginx && \
     chown -R nginx:nginx /var/cache/nginx && \
     chown -R nginx:nginx /var/log/nginx && \
     chown -R nginx:nginx /var/run && \
-    chmod -R 755 /usr/share/nginx/html
+    chmod -R 755 /usr/share/nginx/html && \
+    # Verify static files
+    echo "=== Static Files ===" && \
+    ls -la /usr/share/nginx/html && \
+    echo "=== Contents of html directory ===" && \
+    find /usr/share/nginx/html -type f
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
