@@ -1,32 +1,26 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
 
+// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    react(),
-    tailwindcss(),
-  ],
-  build: {
-    outDir: 'dist',
-    sourcemap: false,
-    minify: 'terser',
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-        },
+  plugins: [react()],
+  server: {
+    port: 3000,
+    strictPort: true,
+    proxy: {
+      '/api': {
+        target: process.env.VITE_BACKEND_URL || 'https://backendworldbook.up.railway.app',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
   },
-  server: {
-    port: 5173,
-    host: true,
+  preview: {
+    port: 3000,
     strictPort: true,
   },
-  preview: {
-    port: 5173,
-    host: true,
-    strictPort: true,
+  build: {
+    outDir: 'dist',
   },
 })

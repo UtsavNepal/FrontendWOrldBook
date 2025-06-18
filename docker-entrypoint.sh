@@ -1,50 +1,98 @@
 #!/bin/sh
 set -e
 
-# Export PORT if not set
-export PORT=${PORT:-80}
-
 # Create necessary directories
 mkdir -p /var/cache/nginx
 mkdir -p /var/log/nginx
 mkdir -p /var/run
 
-# Set proper permissions
+# Set permissions
 chown -R nginx:nginx /var/cache/nginx
 chown -R nginx:nginx /var/log/nginx
 chown -R nginx:nginx /var/run
 
-# Create a temporary nginx configuration with the correct port
+# Create a temporary nginx configuration file with the correct port
 cat > /tmp/nginx.conf << EOF
-$(cat /etc/nginx/nginx.conf | sed "s/listen 80/listen ${PORT}/")
+worker_processes 4;
+error_log /dev/stderr debug;
+pid /var/run/nginx.pid;
+
+events {
+    worker_connections 1024;
+    multi_accept on;
+    use epoll;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+    
+    access_log /dev/stdout combined;
+    error_log /dev/stderr debug;
+    
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+    server_tokens off;
+    
+    server {
+        listen ${PORT:-3000};
+        server_name worldbook.up.railway.app;
+        
+        root /usr/share/nginx/html;
+        index index.html;
+        
+        location / {
+            try_files \$uri \$uri/ /index.html;
+        }
+        
+        location /api/ {
+            rewrite ^/api/(.*) /\$1 break;
+            proxy_pass https://backendworldbook.up.railway.app;
+            proxy_http_version 1.1;
+            proxy_set_header Host backendworldbook.up.railway.app;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto \$scheme;
+            
+            # CORS headers
+            add_header 'Access-Control-Allow-Origin' '*' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' '*' always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
+            
+            if (\$request_method = 'OPTIONS') {
+                add_header 'Access-Control-Allow-Origin' '*' always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' '*' always;
+                add_header 'Access-Control-Allow-Credentials' 'true' always;
+                add_header 'Access-Control-Max-Age' 1728000;
+                add_header 'Content-Type' 'text/plain; charset=utf-8';
+                add_header 'Content-Length' 0;
+                return 204;
+            }
+        }
+    }
+}
 EOF
 
-# Replace the original nginx configuration
-mv /tmp/nginx.conf /etc/nginx/nginx.conf
-
-# Test backend connectivity with detailed output
+# Test backend connectivity
 echo "Testing backend connectivity..."
-echo "=== Backend Test ==="
-curl -v -I https://backendworldbook.up.railway.app/ 2>&1 | tee /tmp/backend_test.log
-echo "=== Backend Test Complete ==="
-
-# Check if backend is responding with expected content
-echo "Testing backend content..."
-echo "=== Backend Content Test ==="
-curl -v https://backendworldbook.up.railway.app/ 2>&1 | tee /tmp/backend_content.log
-echo "=== Backend Content Test Complete ==="
+curl -v https://backendworldbook.up.railway.app/ > /tmp/backend_test.log 2>&1
+if [ $? -eq 0 ]; then
+    echo "Backend is accessible"
+    cat /tmp/backend_test.log
+else
+    echo "Warning: Backend might not be accessible"
+    cat /tmp/backend_test.log
+fi
 
 # Test nginx configuration
-echo "Testing Nginx configuration..."
-nginx -t
+echo "Testing nginx configuration..."
+nginx -t -c /tmp/nginx.conf
 
-# Handle shutdown gracefully
-trap 'echo "Received shutdown signal, stopping Nginx..."; nginx -s quit; exit 0' SIGTERM SIGINT
-
-# Start nginx in foreground
-echo "Starting Nginx..."
-nginx -g 'daemon off;' &
-nginx_pid=$!
-
-# Wait for nginx to exit
-wait $nginx_pid 
+# Start nginx with the temporary configuration
+echo "Starting nginx on port ${PORT:-3000}..."
+nginx -c /tmp/nginx.conf -g 'daemon off;' 
