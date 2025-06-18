@@ -11,6 +11,10 @@ chown -R nginx:nginx /var/cache/nginx
 chown -R nginx:nginx /var/log/nginx
 chown -R nginx:nginx /var/run
 
+# Replace PORT in nginx.conf
+PORT=${PORT:-3000}
+sed -i "s/\${PORT:-3000}/$PORT/g" /etc/nginx/nginx.conf
+
 # Test backend connectivity with detailed output
 echo "Testing backend connectivity..."
 echo "=== Backend Test ==="
@@ -28,5 +32,5 @@ echo "Testing nginx configuration..."
 nginx -t
 
 # Start nginx in foreground
-echo "Starting nginx..."
+echo "Starting nginx on port $PORT..."
 nginx -g 'daemon off;' 
