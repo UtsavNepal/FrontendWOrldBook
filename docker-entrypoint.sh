@@ -22,9 +22,17 @@ EOF
 # Replace the original nginx configuration
 mv /tmp/nginx.conf /etc/nginx/nginx.conf
 
-# Test backend connectivity
+# Test backend connectivity with detailed output
 echo "Testing backend connectivity..."
-curl -v -I https://backendworldbook.up.railway.app/ || echo "Backend connectivity test failed, but continuing..."
+echo "=== Backend Test ==="
+curl -v -I https://backendworldbook.up.railway.app/ 2>&1 | tee /tmp/backend_test.log
+echo "=== Backend Test Complete ==="
+
+# Check if backend is responding with expected content
+echo "Testing backend content..."
+echo "=== Backend Content Test ==="
+curl -v https://backendworldbook.up.railway.app/ 2>&1 | tee /tmp/backend_content.log
+echo "=== Backend Content Test Complete ==="
 
 # Test nginx configuration
 echo "Testing Nginx configuration..."
