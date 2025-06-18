@@ -24,7 +24,7 @@ RUN echo "=== Build Output ===" && \
 FROM nginx:alpine
 
 # Install necessary packages
-RUN apk add --no-cache bash curl
+RUN apk add --no-cache bash curl sed
 
 # Copy built files
 COPY --from=build /app/dist /usr/share/nginx/html
@@ -46,7 +46,7 @@ RUN mkdir -p /var/cache/nginx && \
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-3000}/ || exit 1
+    CMD curl -f http://localhost:${PORT:-80}/ || exit 1
 
-EXPOSE ${PORT:-3000}
+EXPOSE ${PORT:-80}
 ENTRYPOINT ["/docker-entrypoint.sh"] 
