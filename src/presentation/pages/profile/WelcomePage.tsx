@@ -13,6 +13,7 @@ import { profileRepository } from '../../../infrastructure/repositories/ProfileR
 import FullScreenPostModal from "../modal/FullScreenPostModal";
 import { Post } from "../../../core/domain/entities/Post";
 import MainLayout from "../../components/MainLayout";
+import { getImageUrl } from "../../../utils/getImageUrl";
 
 
 const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL;
@@ -358,7 +359,7 @@ export const WelcomePage = () => {
                 {/* Profile Header Row */}
                 <div className="w-full relative h-48 sm:h-64 md:h-72 bg-gray-300">
                   <img
-                    src={profile.cover_photo ? `${BACKEND_BASE_URL}${profile.cover_photo}` : '/default-cover.jpg'}
+                    src={profile.cover_photo ? getImageUrl(profile.cover_photo) : '/default-cover.jpg'}
                     alt="Cover"
                     className="w-full h-full object-cover object-center cursor-pointer"
                     onClick={() => setShowPicOptions('cover')}
@@ -366,7 +367,7 @@ export const WelcomePage = () => {
                   {/* Profile picture overlapping cover photo */}
                   <div className="absolute left-8 bottom-[-48px] sm:bottom-[-64px] md:bottom-[-72px]">
                     <img
-                      src={profile.profile_picture ? `${BACKEND_BASE_URL}${profile.profile_picture}` : '/default-avatar.png'}
+                      src={profile.profile_picture ? getImageUrl(profile.profile_picture) : '/default-avatar.png'}
                       alt="Profile"
                       className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-full object-cover border-4 border-white shadow-lg bg-gray-200 cursor-pointer"
                       onClick={() => setShowPicOptions('profile')}
@@ -727,7 +728,7 @@ export const WelcomePage = () => {
                         </svg>
                       </button>
                       <img
-                        src={profile?.profile_picture ? `${BACKEND_BASE_URL}${profile.profile_picture}` : "/default-avatar.png"}
+                        src={profile?.profile_picture ? getImageUrl(profile.profile_picture) : "/default-avatar.png"}
                         alt="Profile Zoom"
                         className="w-40 h-40 sm:w-60 sm:h-60 md:w-80 md:h-80 rounded-full object-cover border"
                       />
@@ -757,8 +758,8 @@ export const WelcomePage = () => {
                       <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700" onClick={() => setViewPicModal(null)} aria-label="Close view">✕</button>
                       <img
                         src={viewPicModal === 'profile'
-                          ? (profile.profile_picture ? `${BACKEND_BASE_URL}${profile.profile_picture}` : '/default-avatar.png')
-                          : (profile.cover_photo ? `${BACKEND_BASE_URL}${profile.cover_photo}` : '/default-cover.jpg')}
+                          ? (profile.profile_picture ? getImageUrl(profile.profile_picture) : '/default-avatar.png')
+                          : (profile.cover_photo ? getImageUrl(profile.cover_photo) : '/default-cover.jpg')}
                         alt={viewPicModal === 'profile' ? 'Profile' : 'Cover'}
                         className={viewPicModal === 'profile' ? 'w-60 h-60 rounded-full object-cover' : 'w-full max-h-96 object-cover'}
                       />

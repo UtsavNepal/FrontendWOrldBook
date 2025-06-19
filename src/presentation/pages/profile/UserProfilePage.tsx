@@ -7,6 +7,7 @@ import MainLayout from "../../components/MainLayout";
 import { friendRepository } from '../../../infrastructure/repositories/FriendRepository';
 import { postRepository } from '../../../infrastructure/repositories/PostRepository';
 import Spinner from "../../ui/Spinner";
+import { getImageUrl } from '../../../utils/getImageUrl';
 
 
 const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL;
@@ -151,12 +152,6 @@ const UserProfilePage: React.FC = () => {
     } catch (error) {
       console.error('Error unfriending:', error);
     }
-  };
-
-  const getImageUrl = (url: string) => {
-    if (!url) return null;
-    if (url.startsWith('http')) return url;
-    return `${BACKEND_BASE_URL}${url}`;
   };
 
   // Refresh all relevant data

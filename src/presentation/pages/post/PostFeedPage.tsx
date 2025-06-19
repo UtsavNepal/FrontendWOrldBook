@@ -7,8 +7,9 @@ import FullScreenPostModal from "../modal/FullScreenPostModal";
 import { useNavigate } from "react-router-dom";
 import Spinner from "../../ui/Spinner";
 import MainLayout from "../../components/MainLayout";
+import { getImageUrl } from '../../../utils/getImageUrl';
 
-const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+
 
 const PostFeedPage: React.FC = () => {
   const {
@@ -97,7 +98,7 @@ const PostFeedPage: React.FC = () => {
       <div key={comment.id} className={`flex items-center justify-between mb-2 ${isReply ? 'ml-8' : 'ml-0'}`}>
         <div className="flex items-center">
           <img
-            src={`${BACKEND_BASE_URL}${comment.profile.profile_picture}`}
+            src={getImageUrl(comment.profile.profile_picture)}
             alt={comment.profile.username}
             className="w-8 h-8 rounded-full mr-2"
           />
@@ -200,7 +201,7 @@ const PostFeedPage: React.FC = () => {
               <div key={post.id} className="border p-4 mb-4 rounded">
                 <div className="flex items-center mb-2">
                   <img
-                    src={`${BACKEND_BASE_URL}${post.profile.profile_picture}`}
+                    src={getImageUrl(post.profile.profile_picture)}
                     alt={post.profile.username}
                     className="w-10 h-10 rounded-full mr-2"
                   />
@@ -248,7 +249,7 @@ const PostFeedPage: React.FC = () => {
                 )}
                 {post.image && (
                   <img
-                    src={`${BACKEND_BASE_URL}${post.image}`}
+                    src={getImageUrl(post.image)}
                     alt="Post"
                     className="w-[960px] h-[336px] object-cover rounded cursor-pointer"
                     onClick={() => navigate(`/post/${post.id}`)}

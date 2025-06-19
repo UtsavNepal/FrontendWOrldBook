@@ -5,8 +5,9 @@ import { postRepository } from '../../../infrastructure/repositories/PostReposit
 import Spinner from "../../ui/Spinner";
 import Navbar from "../../components/Navabar";
 import EditPostModal from "../modal/EditPostModal";
+import { getImageUrl } from '../../../utils/getImageUrl';
 
-const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+
 
 const ViewPostPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -69,14 +70,14 @@ const ViewPostPage: React.FC = () => {
           <div className="flex flex-col items-center mb-6">
             {post.image && (
               <img
-                src={post.image.startsWith('http') ? post.image : `${BACKEND_BASE_URL}${post.image}`}
+                src={getImageUrl(post.image)}
                 alt="Post"
                 className="w-full max-h-96 object-cover rounded mb-4"
               />
             )}
             <div className="flex items-center gap-3 mb-2">
               <img
-                src={post.profile?.profile_picture ? (post.profile.profile_picture.startsWith('http') ? post.profile.profile_picture : `${BACKEND_BASE_URL}${post.profile.profile_picture}`) : "/default-avatar.png"}
+                src={getImageUrl(post.profile?.profile_picture)}
                 alt={post.profile?.username}
                 className="w-10 h-10 rounded-full object-cover border border-gray-200 cursor-pointer"
                 onClick={() => navigate(`/profile/${post.profile?.id}`)}

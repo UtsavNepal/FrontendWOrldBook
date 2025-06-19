@@ -1,5 +1,6 @@
 import React from "react";
 import { Post } from "../../../core/domain/entities/Post";
+import { getImageUrl } from '../../../utils/getImageUrl';
 
 
 interface FullScreenPostModalProps {
@@ -23,7 +24,7 @@ const FullScreenPostModal: React.FC<FullScreenPostModalProps> = ({ post, onClose
           {post.content && <p>{post.content}</p>}
           {post.image && (
             <img
-              src={`${import.meta.env.VITE_BACKEND_URL}${post.image}`}
+              src={getImageUrl(post.image)}
               alt="Post"
               className="w-full h-auto rounded"
             />

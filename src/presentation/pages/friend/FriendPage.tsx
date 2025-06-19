@@ -6,15 +6,7 @@ import FriendActionButtons from "../../components/FriendActionButtons";
 import { friendRepository } from '../../../infrastructure/repositories/FriendRepository';
 import { SpinnerOverlay } from "../../ui/Spinner";
 import MainLayout from "../../components/MainLayout";
-
-
-
-
-const getImageUrl = (url?: string): string => {
-  if (!url) return "/default-avatar.png";
-  if (url.startsWith('http')) return url;
-  return `${import.meta.env.VITE_BACKEND_URL}${url}`;
-};
+import { getImageUrl } from '../../../utils/getImageUrl';
 
 const FriendPage: React.FC = () => {
   const {
