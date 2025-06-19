@@ -10,8 +10,8 @@ import MainLayout from "../../components/MainLayout";
 
 
 
-const getImageUrl = (url: string) => {
-  if (!url) return undefined;
+const getImageUrl = (url?: string): string => {
+  if (!url) return "/default-avatar.png";
   if (url.startsWith('http')) return url;
   return `${import.meta.env.VITE_BACKEND_URL}${url}`;
 };
@@ -120,7 +120,7 @@ const FriendPage: React.FC = () => {
   return (
     <MainLayout>
       <div className="min-h-screen flex justify-center items-start bg-gray-100 pl-0 sm:pl-0 md:pl-0 py-8">
-        <div className="w-full max-w-2xl px-2 sm:px-4 md:px-6 lg:px-8">
+        <div className="w-full max-w-2xl px-2 sm:px-4 md:px-6 lg:px-8 flex-1 h-full">
           {fetchError && <div className="text-red-500 mb-4">{fetchError}</div>}
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Your Friends</h1>

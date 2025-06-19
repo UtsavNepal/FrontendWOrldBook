@@ -18,7 +18,7 @@ const NotificationsPage: React.FC = () => {
   return (
     <MainLayout>
       <div className="flex justify-center items-start min-h-screen bg-gray-50">
-        <div className="w-full max-w-xl p-4 bg-white rounded-lg shadow-md mt-8 mx-auto">
+        <div className="w-full max-w-xl p-4 bg-white rounded-lg shadow-md mt-8 mx-auto flex-1 h-full">
           <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">Notifications</h2>
           {loading ? (
             <div className="text-center text-gray-400 py-8">Loading...</div>

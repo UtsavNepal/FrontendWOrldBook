@@ -91,6 +91,88 @@ const PostFeedPage: React.FC = () => {
     }
   };
 
+  // Helper to render comments with only one level of replies
+  const renderComments = (commentsList: Comment[], postId: number, isReply = false) =>
+    [...commentsList].reverse().map((comment) => (
+      <div key={comment.id} className={`flex items-center justify-between mb-2 ${isReply ? 'ml-8' : 'ml-0'}`}>
+        <div className="flex items-center">
+          <img
+            src={`${BACKEND_BASE_URL}${comment.profile.profile_picture}`}
+            alt={comment.profile.username}
+            className="w-8 h-8 rounded-full mr-2"
+          />
+          <div>
+            <span className="font-bold">{comment.profile.username}</span>
+            {editingCommentId === comment.id ? (
+              <input
+                type="text"
+                value={editedComment}
+                onChange={(e) => setEditedComment(e.target.value)}
+                className="ml-2 p-1 border rounded"
+              />
+            ) : (
+              <p className="text-sm">{comment.comment}</p>
+            )}
+            <button
+              onClick={() => setReplyToCommentId(comment.id)}
+              className="text-blue-500 ml-2"
+            >
+              Reply
+            </button>
+            {replyToCommentId === comment.id && (
+              <div className="flex items-center mt-2 ml-4">
+                <input
+                  type="text"
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  placeholder="Write a reply..."
+                  className="flex-grow p-2 border rounded"
+                />
+                <button
+                  onClick={() => handleReplySubmit(postId, comment.id)}
+                  className="ml-2 bg-green-500 text-white px-4 py-2 rounded"
+                >
+                  Reply
+                </button>
+              </div>
+            )}
+            {/* Only render one level of replies */}
+            {!isReply && comment.replies && comment.replies.length > 0 && (
+              <div className="mt-2">
+                {renderComments(comment.replies, postId, true)}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex space-x-2">
+          {editingCommentId === comment.id ? (
+            <button
+              onClick={() => handleEditComment(comment.id)}
+              className="text-green-500"
+            >
+              Save
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                setEditingCommentId(comment.id);
+                setEditedComment(comment.comment);
+              }}
+              className="text-blue-500"
+            >
+              Edit
+            </button>
+          )}
+          <button
+            onClick={() => handleDeleteComment(comment.id)}
+            className="text-red-500"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    ));
+
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login");
@@ -109,7 +191,7 @@ const PostFeedPage: React.FC = () => {
   return (
     <MainLayout>
       <div className="flex justify-center p-4 min-h-screen bg-gray-50">
-        <div className="w-full max-w-4xl">
+        <div className="w-full max-w-4xl flex-1 h-full">
           <h1 className="text-2xl font-bold mb-4">Feed</h1>
           {loading ? (
             <Spinner />
@@ -202,96 +284,8 @@ const PostFeedPage: React.FC = () => {
                         Post
                       </button>
                     </div>
-                    {comments.map((comment) => (
-                      <div key={comment.id} className="flex items-center justify-between mb-2">
-                        <div className="flex items-center">
-                          <img
-                            src={`${BACKEND_BASE_URL}${comment.profile.profile_picture}`}
-                            alt={comment.profile.username}
-                            className="w-8 h-8 rounded-full mr-2"
-                          />
-                          <div>
-                            <span className="font-bold">{comment.profile.username}</span>
-                            {editingCommentId === comment.id ? (
-                              <input
-                                type="text"
-                                value={editedComment}
-                                onChange={(e) => setEditedComment(e.target.value)}
-                                className="ml-2 p-1 border rounded"
-                              />
-                            ) : (
-                              <p className="text-sm">{comment.comment}</p>
-                            )}
-                            <button
-                              onClick={() => setReplyToCommentId(comment.id)}
-                              className="text-blue-500 ml-2"
-                            >
-                              Reply
-                            </button>
-                            {replyToCommentId === comment.id && (
-                              <div className="flex items-center mt-2 ml-4">
-                                <input
-                                  type="text"
-                                  value={replyText}
-                                  onChange={(e) => setReplyText(e.target.value)}
-                                  placeholder="Write a reply..."
-                                  className="flex-grow p-2 border rounded"
-                                />
-                                <button
-                                  onClick={() => handleReplySubmit(post.id, comment.id)}
-                                  className="ml-2 bg-green-500 text-white px-4 py-2 rounded"
-                                >
-                                  Reply
-                                </button>
-                              </div>
-                            )}
-                            {comment.replies && comment.replies.length > 0 && (
-                              <div className="ml-8 mt-2">
-                                {comment.replies.map((reply) => (
-                                  <div key={reply.id} className="flex items-center mb-2">
-                                    <img
-                                      src={`${BACKEND_BASE_URL}${reply.profile.profile_picture}`}
-                                      alt={reply.profile.username}
-                                      className="w-6 h-6 rounded-full mr-2"
-                                    />
-                                    <div>
-                                      <span className="font-bold text-sm">{reply.profile.username}</span>
-                                      <p className="text-sm">{reply.comment}</p>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          {editingCommentId === comment.id ? (
-                            <button
-                              onClick={() => handleEditComment(comment.id)}
-                              className="text-green-500"
-                            >
-                              Save
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                setEditingCommentId(comment.id);
-                                setEditedComment(comment.comment);
-                              }}
-                              className="text-blue-500"
-                            >
-                              Edit
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDeleteComment(comment.id)}
-                            className="text-red-500"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                    {/* Only render top-level comments at the root */}
+                    {renderComments(comments.filter(c => !(c as any).parent), post.id)}
                   </div>
                 )}
               </div>

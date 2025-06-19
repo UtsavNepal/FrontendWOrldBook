@@ -191,6 +191,56 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
   async getFriends(): Promise<any[]> {
     return this.get<any[]>(`/profile/list-friends/`);
   }
+
+  // Remove profile picture
+  async removeProfilePicture(): Promise<Profile> {
+    try {
+      const response = await this.patch<ProfileResponse>("/", { profile_picture: null });
+      if (!response || !response.user) {
+        throw new Error("Invalid profile data received from the server");
+      }
+      return {
+        id: Number(response.user.id),
+        ...response,
+        post_photos: (response as any).post_photos ?? [],
+        user: {
+          id: Number(response.user.id),
+          joined_at: response.user.joined_at,
+          gender: response.user.gender,
+          email: response.user.email,
+          birthday: response.user.birthday,
+        },
+      };
+    } catch (error) {
+      console.error("Failed to remove profile picture:", error);
+      throw error;
+    }
+  }
+
+  // Remove cover photo
+  async removeCoverPhoto(): Promise<Profile> {
+    try {
+      const response = await this.patch<ProfileResponse>("/", { cover_photo: null });
+      if (!response || !response.user) {
+        throw new Error("Invalid profile data received from the server");
+      }
+      return {
+        id: Number(response.user.id),
+        ...response,
+        post_photos: (response as any).post_photos ?? [],
+        user: {
+          id: Number(response.user.id),
+          joined_at: response.user.joined_at,
+          gender: response.user.gender,
+          email: response.user.email,
+          birthday: response.user.birthday,
+        },
+      };
+    } catch (error) {
+      console.error("Failed to remove cover photo:", error);
+      throw error;
+    }
+  }
 }
 
 // Export an instance of ProfileRepository

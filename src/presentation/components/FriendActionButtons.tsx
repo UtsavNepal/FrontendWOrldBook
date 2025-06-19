@@ -3,7 +3,7 @@ import { FriendRequest } from '../../core/domain/entities/Friend.entity';
 
 interface User {
   id: number;
-  username: string;
+  username?: string;
   profile_picture?: string;
 }
 

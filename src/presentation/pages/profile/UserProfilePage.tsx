@@ -217,7 +217,7 @@ const UserProfilePage: React.FC = () => {
             className="w-full h-full object-cover object-center"
           />
           {/* Profile Picture - Overlapping */}
-          <div className="absolute left-8 bottom-[-56px] sm:bottom-[-72px] md:bottom-[-80px] z-10">
+          <div className="absolute left-8 bottom-[-48px] sm:bottom-[-64px] md:bottom-[-72px]">
             <img
               src={profile.profile_picture ? getImageUrl(profile.profile_picture) || '' : '/default-avatar.png'}
               alt="Profile"
@@ -225,9 +225,9 @@ const UserProfilePage: React.FC = () => {
             />
           </div>
         </div>
-        {/* Profile Info and Actions */}
+        
         <div className="flex flex-col sm:flex-row justify-between w-full max-w-4xl mt-16 px-4 gap-4">
-          {/* Left: Username, Bio */}
+          
           <div className="flex flex-col items-start flex-1 min-w-[200px]">
             <div className="text-2xl font-bold text-gray-800 mt-2">{profile.username}</div>
             <div className="text-base text-gray-700 mb-2">{profile.bio}</div>
@@ -321,22 +321,18 @@ const UserProfilePage: React.FC = () => {
                 </button>
               </div>
             )}
-            <div className="flex flex-row gap-6 mt-4 text-lg sm:text-xl font-medium text-gray-800">
-              <span>{profile.total_posts} Posts</span>
-              <span className="cursor-pointer hover:underline" onClick={() => { fetchFollowersList(); }}>{profile.total_followers ?? 0} Followers</span>
-              <span className="cursor-pointer hover:underline" onClick={() => { fetchFollowingList(); }}>{profile.total_following ?? 0} Following</span>
-            </div>
+            
           </div>
         </div>
         {/* Tabs */}
         <div className="flex justify-center gap-8 border-b pb-2 mb-4 mt-8 w-full max-w-4xl">
-          <button className={`px-4 py-2 font-semibold ${activeTab === 'posts' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => setActiveTab('posts')}>Posts ({posts.length})</button>
-          <button className={`px-4 py-2 font-semibold ${activeTab === 'followers' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('followers'); fetchFollowersList(); }}>Followers ({followersList.length})</button>
-          <button className={`px-4 py-2 font-semibold ${activeTab === 'following' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('following'); fetchFollowingList(); }}>Following ({followingList.length})</button>
-          <button className={`px-4 py-2 font-semibold ${activeTab === 'friends' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('friends'); fetchFriendsList(); }}>Friends ({friendsList.length})</button>
+          <button className={`px-4 py-2 font-semibold ${activeTab === 'posts' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => setActiveTab('posts')}>Posts </button>
+          <button className={`px-4 py-2 font-semibold ${activeTab === 'followers' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('followers'); fetchFollowersList(); }}>Followers </button>
+          <button className={`px-4 py-2 font-semibold ${activeTab === 'following' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('following'); fetchFollowingList(); }}>Following </button>
+          <button className={`px-4 py-2 font-semibold ${activeTab === 'friends' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('friends'); fetchFriendsList(); }}>Friends </button>
         </div>
         {/* Tab Content */}
-        <div className="w-full max-w-4xl">
+        <div className="w-full max-w-xl p-2 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg shadow-md mt-8 mx-auto flex-1 h-full">
           {activeTab === 'posts' && (
             <div>
               {posts.length === 0 && <div>No posts to show.</div>}

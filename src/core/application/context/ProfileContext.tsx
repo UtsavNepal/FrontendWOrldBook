@@ -10,6 +10,8 @@ interface ProfileContextType {
   uploadProfilePicture: (file: File) => Promise<void>;
   uploadCoverPhoto: (file: File) => Promise<void>;
   deleteAccount: () => Promise<void>;
+  removeProfilePicture: () => Promise<void>;
+  removeCoverPhoto: () => Promise<void>;
 }
 
 
@@ -82,6 +84,24 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const removeProfilePicture = async () => {
+    try {
+      const updatedProfile = await profileRepository.removeProfilePicture();
+      setProfile(updatedProfile);
+    } catch (error) {
+      console.error("Failed to remove profile picture:", error);
+    }
+  };
+
+  const removeCoverPhoto = async () => {
+    try {
+      const updatedProfile = await profileRepository.removeCoverPhoto();
+      setProfile(updatedProfile);
+    } catch (error) {
+      console.error("Failed to remove cover photo:", error);
+    }
+  };
+
   return (
     <ProfileContext.Provider
       value={{
@@ -91,6 +111,8 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
         uploadProfilePicture,
         uploadCoverPhoto,
         deleteAccount,
+        removeProfilePicture,
+        removeCoverPhoto,
       }}
     >
       {children}

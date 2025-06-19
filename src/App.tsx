@@ -6,9 +6,7 @@ function App() {
   return (
     <BrowserRouter>
       <Provider>
-      <div className="pb-16">
         <AppRoutes />
-        </div>
       </Provider>
     </BrowserRouter>
   );
