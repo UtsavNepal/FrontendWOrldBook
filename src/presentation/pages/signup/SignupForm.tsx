@@ -14,7 +14,7 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
     email: "",
     password: "",
   });
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
 
   const handleBack = () => {
@@ -22,40 +22,34 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError(null);
+    const { name } = e.target;
+    setFormData({ ...formData, [name]: e.target.value });
+    setErrors(prev => ({ ...prev, [name]: "", general: "" }));
   };
 
   const validateForm = () => {
+    const newErrors: { [key: string]: string } = {};
     if (!formData.firstname.trim()) {
-      setError("First name is required");
-      return false;
+      newErrors.firstname = "First name is required";
     }
     if (!formData.lastname.trim()) {
-      setError("Last name is required");
-      return false;
+      newErrors.lastname = "Last name is required";
     }
     if (!formData.birthday) {
-      setError("Birthday is required");
-      return false;
+      newErrors.birthday = "Birthday is required";
     }
     if (!formData.email.trim()) {
-      setError("Email is required");
-      return false;
-    }
-    if (!isValidEmail(formData.email)) {
-      setError("Please enter a valid email address");
-      return false;
+      newErrors.email = "Email is required";
+    } else if (!isValidEmail(formData.email)) {
+      newErrors.email = "Please enter a valid email address";
     }
     if (!formData.password) {
-      setError("Password is required");
-      return false;
+      newErrors.password = "Password is required";
+    } else if (formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters long";
     }
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters long");
-      return false;
-    }
-    return true;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const isValidEmail = (email: string) => {
@@ -65,7 +59,7 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setErrors({});
     setLoading(true);
 
     if (!validateForm()) {
@@ -80,18 +74,31 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
         setStep("verify");
       }
     } catch (error: any) {
-      console.error("Signup error:", error);
-      const errorMessage = error.response?.data?.error || error.message || "Signup failed. Please try again.";
-      
-      // Handle specific email sending error
-      if (errorMessage.includes("Failed to send OTP email")) {
-        setError("We're having trouble sending the verification email. Please try again in a few minutes or contact support.");
-      } else if (errorMessage.includes("already exists")) {
-        // If user exists but is not verified, we can proceed with signup
-        setEmail(formData.email);
-        setStep("verify");
+      const data = error.response?.data;
+      if (typeof data === "object" && data !== null) {
+        const fieldErrors: { [key: string]: string } = {};
+        for (const key in data) {
+          if (Array.isArray(data[key])) {
+            fieldErrors[key] = data[key][0];
+          } else if (typeof data[key] === "string") {
+            if (key === "error") {
+              const msg = data[key].toLowerCase();
+              if (msg.includes("username")) fieldErrors.username = data[key];
+              else if (msg.includes("email")) fieldErrors.email = data[key];
+              else if (msg.includes("password")) fieldErrors.password = data[key];
+              else if (msg.includes("first name")) fieldErrors.firstname = data[key];
+              else if (msg.includes("last name")) fieldErrors.lastname = data[key];
+              else if (msg.includes("birthday")) fieldErrors.birthday = data[key];
+              else if (msg.includes("gender")) fieldErrors.gender = data[key];
+              else fieldErrors.general = data[key];
+            } else {
+              fieldErrors[key] = data[key];
+            }
+          }
+        }
+        setErrors(fieldErrors);
       } else {
-        setError(errorMessage);
+        setErrors({ general: error.message || "Signup failed. Please try again." });
       }
     } finally {
       setLoading(false);
@@ -101,9 +108,9 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow-md rounded-lg">
       <h2 className="text-2xl font-bold mb-4 text-center">Sign Up</h2>
-      {error && (
+      {errors.general && (
         <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-          {error}
+          {errors.general}
         </div>
       )}
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -117,6 +124,7 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
             className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
             required 
           />
+          {errors.firstname && <div className="text-red-600 text-sm mt-1">{errors.firstname}</div>}
         </div>
         <div>
           <input 
@@ -128,6 +136,7 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
             className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
             required 
           />
+          {errors.lastname && <div className="text-red-600 text-sm mt-1">{errors.lastname}</div>}
         </div>
         <div>
           <input 
@@ -138,6 +147,7 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
             className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
             required 
           />
+          {errors.birthday && <div className="text-red-600 text-sm mt-1">{errors.birthday}</div>}
         </div>
         <div>
           <select 
@@ -150,6 +160,7 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
             <option value="male">Male</option>
             <option value="female">Female</option>
           </select>
+          {errors.gender && <div className="text-red-600 text-sm mt-1">{errors.gender}</div>}
         </div>
         <div>
           <input 
@@ -161,6 +172,7 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
             className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
             required 
           />
+          {errors.email && <div className="text-red-600 text-sm mt-1">{errors.email}</div>}
         </div>
         <div>
           <input 
@@ -173,6 +185,7 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
             required 
             minLength={6}
           />
+          {errors.password && <div className="text-red-600 text-sm mt-1">{errors.password}</div>}
         </div>
         <button 
           type="submit" 

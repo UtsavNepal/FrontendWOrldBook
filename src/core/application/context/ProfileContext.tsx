@@ -8,6 +8,7 @@ interface ProfileContextType {
   fetchProfile: () => Promise<void>;
   updateProfile: (updatedData: Partial<Profile>) => Promise<void>;
   uploadProfilePicture: (file: File) => Promise<void>;
+  uploadCoverPhoto: (file: File) => Promise<void>;
   deleteAccount: () => Promise<void>;
 }
 
@@ -62,6 +63,16 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
   };
 
   
+  const uploadCoverPhoto = async (file: File) => {
+    try {
+      const updatedProfile = await profileRepository.uploadCoverPhoto(file);
+      setProfile(updatedProfile);
+    } catch (error) {
+      console.error("Failed to upload cover photo:", error);
+    }
+  };
+
+  
   const deleteAccount = async () => {
     try {
       await profileRepository.deleteAccount();
@@ -78,6 +89,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
         fetchProfile,
         updateProfile,
         uploadProfilePicture,
+        uploadCoverPhoto,
         deleteAccount,
       }}
     >

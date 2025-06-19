@@ -8,7 +8,7 @@ import Spinner from "../../ui/Spinner";
 
 import { usePostContext } from "../../../core/application/context/PostContext";
 
-import { Modal } from '../../pages/modal/modal';
+
 import { profileRepository } from '../../../infrastructure/repositories/ProfileRepository';
 import FullScreenPostModal from "../modal/FullScreenPostModal";
 import { Post } from "../../../core/domain/entities/Post";
@@ -19,7 +19,7 @@ const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 export const WelcomePage = () => {
   const { isAuthenticated, logout, user } = useAuth();
-  const { profile, fetchProfile, updateProfile, uploadProfilePicture, deleteAccount } = useProfile();
+  const { profile, fetchProfile, updateProfile, uploadProfilePicture, deleteAccount, uploadCoverPhoto } = useProfile();
   const [editMode, setEditMode] = useState<"username" | "profile_picture" | "bio" | "gender" | null>(null);
   const [updatedUsername, setUpdatedUsername] = useState("");
   const [updatedProfilePicture, setUpdatedProfilePicture] = useState<File | null>(null);
@@ -41,13 +41,15 @@ export const WelcomePage = () => {
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editedComment, setEditedComment] = useState("");
   const [showProfilePicModal, setShowProfilePicModal] = useState(false);
-  const [showFollowersModal, setShowFollowersModal] = useState(false);
-  const [showFollowingModal, setShowFollowingModal] = useState(false);
+ 
   const [followersList, setFollowersList] = useState<any[]>([]);
   const [followingList, setFollowingList] = useState<any[]>([]);
   const [loadingFollowers, setLoadingFollowers] = useState(false);
   const [loadingFollowing, setLoadingFollowing] = useState(false);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [activeTab, setActiveTab] = useState<'posts' | 'followers' | 'following' | 'friends'>('posts');
+  const [friendsList, setFriendsList] = useState<any[]>([]);
+  const [loadingFriends, setLoadingFriends] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -113,10 +115,9 @@ export const WelcomePage = () => {
     }
   };
 
-  // Filter posts to only those by the authenticated user
   const userPosts = posts.filter(post => post.profile?.user?.id === user?.id);
 
-  // Fetch comments for a post
+
   const fetchComments = async (postId: number) => {
     try {
       const comments = await getComments(postId);
@@ -184,6 +185,16 @@ export const WelcomePage = () => {
     }
   };
 
+  const fetchFriendsList = async () => {
+    setLoadingFriends(true);
+    try {
+      const friends = await profileRepository.getFriends();
+      setFriendsList(friends);
+    } finally {
+      setLoadingFriends(false);
+    }
+  };
+
   if (!isAuthenticated) {
     return null; 
   }
@@ -209,133 +220,177 @@ export const WelcomePage = () => {
           {profile && (
             <div className="space-y-10">
               {/* Profile Header Row */}
-              <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 sm:gap-8 mb-8 relative">
-                {/* Profile Picture and Bio */}
-                <div className="flex-shrink-0 flex flex-col items-center">
-                  <img
-                    src={`${BACKEND_BASE_URL}${profile.profile_picture}`}
-                    alt="Profile"
-                    className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-full object-cover bg-gray-200 border-4 border-blue-500"
-                  />
-                  <span className="mt-2 text-base sm:text-lg text-gray-500">Profile picture</span>
-                  <span className="mt-2 text-sm sm:text-base text-gray-700">{profile.bio}</span>
+              <div className="relative w-full h-48 sm:h-64 md:h-72 bg-gray-300 rounded-t-lg overflow-hidden mb-8">
+                <img
+                  src={profile.cover_photo ? `${BACKEND_BASE_URL}${profile.cover_photo}` : '/default-cover.jpg'}
+                  alt="Cover"
+                  className="w-full h-full object-cover object-center"
+                />
+                {/* Upload cover photo button (only for logged-in user) */}
+                <div className="absolute top-2 right-2">
+                  <label className="bg-white bg-opacity-80 px-3 py-1 rounded shadow cursor-pointer text-xs font-semibold">
+                    Change Cover Photo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          await uploadCoverPhoto(e.target.files[0]);
+                          fetchProfile();
+                        }
+                      }}
+                    />
+                  </label>
                 </div>
-                {/* Stats, Username, Gender */}
-                <div className="flex-1 flex flex-col items-center sm:items-start justify-center gap-2 mt-6 sm:mt-0">
-                  <div className="text-xl sm:text-2xl font-bold text-gray-800 mt-2 break-words text-center sm:text-left">{profile.username}</div>
-                  <div className="text-sm sm:text-base text-gray-700 mb-2">{profile.user.gender}</div>
-                  <div className="flex flex-row gap-4 sm:gap-8 mb-2 text-base sm:text-lg font-medium text-gray-800 flex-wrap justify-center sm:justify-start">
-                    <span>{profile.total_posts} Posts</span>
-                    <span className="cursor-pointer hover:underline" onClick={() => { fetchFollowersList(); setShowFollowersModal(true); }}>check Followers</span>
-                    <span className="cursor-pointer hover:underline" onClick={() => { fetchFollowingList(); setShowFollowingModal(true); }}>check Following</span>
-                  </div>
+                {/* Profile picture overlapping cover photo */}
+                <div className="absolute left-8 bottom-[-48px] sm:bottom-[-64px] md:bottom-[-72px]">
+                  <img
+                    src={profile.profile_picture ? `${BACKEND_BASE_URL}${profile.profile_picture}` : '/default-avatar.png'}
+                    alt="Profile"
+                    className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-full object-cover border-4 border-white shadow-lg bg-gray-200"
+                  />
                 </div>
               </div>
               {/* Posts Section */}
-              <div className="mt-2">
-                <h3 className="text-lg sm:text-xl font-semibold mb-4">Posts</h3>
-                {userPosts.length === 0 ? (
-                  <div className="bg-gray-100 rounded-lg p-4 sm:p-8 text-center text-gray-500">No posts yet.</div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {userPosts.map((post) => (
-                      <div key={post.id} className="bg-gray-200 rounded-lg p-4 sm:p-6 flex flex-col gap-4 cursor-pointer hover:bg-gray-300 transition">
-                        <div className="flex items-center mb-2 gap-2">
-                          <img
-                            src={`${BACKEND_BASE_URL}${post.profile.profile_picture}`}
-                            alt={post.profile.username}
-                            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
-                          />
-                          <span className="font-bold text-sm sm:text-base">{post.profile.username}</span>
-                        </div>
-                        {post.content && <p className="mb-2 text-xs sm:text-sm md:text-base">{post.content}</p>}
-                        {post.image && (
-                          <img
-                            src={`${BACKEND_BASE_URL}${post.image}`}
-                            alt="Post"
-                            className="w-full h-32 sm:h-40 md:h-48 object-cover rounded mb-2"
-                          />
-                        )}
-                        <div className="flex space-x-4 mt-2 text-xs sm:text-sm">
-                          <button onClick={e => { e.stopPropagation(); likepost(post.id); }} className="flex items-center">
-                            <span>👍</span>
-                            <span>{post.likes}</span>
-                          </button>
-                          <button
-                            onClick={e => { e.stopPropagation(); handleOpenComments(post.id); }}
-                            className="flex items-center"
-                          >
-                            <span>💬</span>
-                            <span>{post.comments.length} comments</span>
-                          </button>
-                        </div>
-                        {openCommentSectionId === post.id && (
-                          <div className="mt-4">
-                            <div className="flex items-center mb-4 gap-2">
-                              <input
-                                type="text"
-                                value={newComment}
-                                onChange={(e) => setNewComment(e.target.value)}
-                                placeholder="Write a comment..."
-                                className="flex-grow p-2 border rounded text-xs sm:text-sm"
-                              />
-                              <button
-                                onClick={() => handleCommentSubmit(post.id)}
-                                className="ml-2 bg-blue-500 text-white px-2 py-1 rounded text-xs sm:text-sm"
-                              >
-                                Post
-                              </button>
-                            </div>
-                            {comments.map((comment) => (
-                              <div key={comment.id} className="flex items-center mb-2 gap-2">
-                                <span className="font-semibold text-xs sm:text-sm mr-2">{comment.profile?.username}:</span>
-                                {editingCommentId === comment.id ? (
-                                  <>
-                                    <input
-                                      type="text"
-                                      value={editedComment}
-                                      onChange={(e) => setEditedComment(e.target.value)}
-                                      className="border p-1 rounded w-2/3 text-xs sm:text-sm"
-                                    />
-                                    <button
-                                      onClick={() => handleEditComment(comment.id)}
-                                      className="ml-2 bg-green-500 text-white px-2 py-1 rounded text-xs sm:text-sm"
-                                    >
-                                      Save
-                                    </button>
-                                    <button
-                                      onClick={() => setEditingCommentId(null)}
-                                      className="ml-2 bg-red-500 text-white px-2 py-1 rounded text-xs sm:text-sm"
-                                    >
-                                      Cancel
-                                    </button>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span className="text-xs sm:text-sm">{comment.comment}</span>
-                                    <button
-                                      onClick={() => { setEditingCommentId(comment.id); setEditedComment(comment.comment); }}
-                                      className="ml-2 text-blue-500 hover:underline text-xs sm:text-sm"
-                                    >
-                                      Edit
-                                    </button>
-                                    <button
-                                      onClick={() => handleDeleteComment(comment.id)}
-                                      className="ml-2 text-red-500 hover:underline text-xs sm:text-sm"
-                                    >
-                                      Delete
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+              <div className="flex justify-center gap-8 border-b pb-2 mb-4 mt-12">
+                <button className={`px-4 py-2 font-semibold ${activeTab === 'posts' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => setActiveTab('posts')}>Posts ({userPosts.length})</button>
+                <button className={`px-4 py-2 font-semibold ${activeTab === 'followers' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('followers'); fetchFollowersList(); }}>Followers ({followersList.length})</button>
+                <button className={`px-4 py-2 font-semibold ${activeTab === 'following' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('following'); fetchFollowingList(); }}>Following ({followingList.length})</button>
+                <button className={`px-4 py-2 font-semibold ${activeTab === 'friends' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('friends'); fetchFriendsList(); }}>Friends ({friendsList.length})</button>
               </div>
+              {activeTab === 'posts' && (
+                <div className="mt-2">
+                  {userPosts.length === 0 ? (
+                    <div className="bg-gray-100 rounded-lg p-4 sm:p-8 text-center text-gray-500">No posts yet.</div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {userPosts.map((post) => (
+                        <div key={post.id} className="bg-gray-200 rounded-lg p-4 sm:p-6 flex flex-col gap-4 cursor-pointer hover:bg-gray-300 transition">
+                          <div className="flex items-center mb-2 gap-2">
+                            <img
+                              src={`${BACKEND_BASE_URL}${post.profile.profile_picture}`}
+                              alt={post.profile.username}
+                              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
+                            />
+                            <span className="font-bold text-sm sm:text-base">{post.profile.username}</span>
+                          </div>
+                          {post.content && <p className="mb-2 text-xs sm:text-sm md:text-base">{post.content}</p>}
+                          {post.image && (
+                            <img
+                              src={`${BACKEND_BASE_URL}${post.image}`}
+                              alt="Post"
+                              className="w-full h-32 sm:h-40 md:h-48 object-cover rounded mb-2"
+                            />
+                          )}
+                          <div className="flex space-x-4 mt-2 text-xs sm:text-sm">
+                            <button onClick={e => { e.stopPropagation(); likepost(post.id); }} className="flex items-center">
+                              <span>👍</span>
+                              <span>{post.likes}</span>
+                            </button>
+                            <button
+                              onClick={e => { e.stopPropagation(); handleOpenComments(post.id); }}
+                              className="flex items-center"
+                            >
+                              <span>💬</span>
+                              <span>{post.comments.length} comments</span>
+                            </button>
+                          </div>
+                          {openCommentSectionId === post.id && (
+                            <div className="mt-4">
+                              <div className="flex items-center mb-4 gap-2">
+                                <input
+                                  type="text"
+                                  value={newComment}
+                                  onChange={(e) => setNewComment(e.target.value)}
+                                  placeholder="Write a comment..."
+                                  className="flex-grow p-2 border rounded text-xs sm:text-sm"
+                                />
+                                <button
+                                  onClick={() => handleCommentSubmit(post.id)}
+                                  className="ml-2 bg-blue-500 text-white px-2 py-1 rounded text-xs sm:text-sm"
+                                >
+                                  Post
+                                </button>
+                              </div>
+                              {comments.map((comment) => (
+                                <div key={comment.id} className="flex items-center mb-2 gap-2">
+                                  <span className="font-semibold text-xs sm:text-sm mr-2">{comment.profile?.username}:</span>
+                                  {editingCommentId === comment.id ? (
+                                    <>
+                                      <input
+                                        type="text"
+                                        value={editedComment}
+                                        onChange={(e) => setEditedComment(e.target.value)}
+                                        className="border p-1 rounded w-2/3 text-xs sm:text-sm"
+                                      />
+                                      <button
+                                        onClick={() => handleEditComment(comment.id)}
+                                        className="ml-2 bg-green-500 text-white px-2 py-1 rounded text-xs sm:text-sm"
+                                      >
+                                        Save
+                                      </button>
+                                      <button
+                                        onClick={() => setEditingCommentId(null)}
+                                        className="ml-2 bg-red-500 text-white px-2 py-1 rounded text-xs sm:text-sm"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="text-xs sm:text-sm">{comment.comment}</span>
+                                      <button
+                                        onClick={() => { setEditingCommentId(comment.id); setEditedComment(comment.comment); }}
+                                        className="ml-2 text-blue-500 hover:underline text-xs sm:text-sm"
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteComment(comment.id)}
+                                        className="ml-2 text-red-500 hover:underline text-xs sm:text-sm"
+                                      >
+                                        Delete
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {activeTab === 'followers' && (
+                <div className="mt-2">
+                  {loadingFollowers ? <Spinner /> : (
+                    <ul>
+                      {followersList.length === 0 ? <li>No followers yet.</li> : followersList.map(f => <li key={f.id}>{f.user?.username}</li>)}
+                    </ul>
+                  )}
+                </div>
+              )}
+              {activeTab === 'following' && (
+                <div className="mt-2">
+                  {loadingFollowing ? <Spinner /> : (
+                    <ul>
+                      {followingList.length === 0 ? <li>Not following anyone yet.</li> : followingList.map(f => <li key={f.id}>{f.user?.username}</li>)}
+                    </ul>
+                  )}
+                </div>
+              )}
+              {activeTab === 'friends' && (
+                <div className="mt-2">
+                  {loadingFriends ? <Spinner /> : (
+                    <ul>
+                      {friendsList.length === 0 ? <li>No friends yet.</li> : friendsList.map(f => <li key={f.id}>{f.user?.username}</li>)}
+                    </ul>
+                  )}
+                </div>
+              )}
               {/* Modals for settings, followers, following, profile pic, and full post */}
               {showSettings && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
@@ -561,41 +616,6 @@ export const WelcomePage = () => {
                     />
                   </div>
                 </div>
-              )}
-              {showFollowersModal && (
-                <Modal isOpen={showFollowersModal} onClose={() => setShowFollowersModal(false)}>
-                  {loadingFollowers ? <Spinner /> : (
-                    <ul className="space-y-2">
-                      {followersList.length === 0 ? <li>No followers yet.</li> : followersList.map((f: any) => (
-                        <li key={f.id} className="flex items-center gap-2">
-                          <img src={f.profile_picture ? `${BACKEND_BASE_URL}${f.profile_picture}` : '/default-avatar.png'} alt={f.username} className="w-8 h-8 rounded-full object-cover border" />
-                          <span className="font-medium text-xs sm:text-sm">{f.username}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </Modal>
-              )}
-              {showFollowingModal && (
-                <Modal isOpen={showFollowingModal} onClose={() => setShowFollowingModal(false)}>
-                  <div className="p-4">
-                    <h2 className="text-base sm:text-lg font-bold mb-2">Following ({followingList.length})</h2>
-                    {loadingFollowing ? <Spinner /> : (
-                      <ul className="space-y-2">
-                        {followingList.length === 0 ? (
-                          <li className="text-gray-500">Not following anyone yet.</li>
-                        ) : (
-                          followingList.map((f: any) => (
-                            <li key={f.id} className="flex items-center gap-2">
-                              <img src={f.profile_picture ? `${BACKEND_BASE_URL}${f.profile_picture}` : '/default-avatar.png'} alt={f.username} className="w-8 h-8 rounded-full object-cover border" />
-                              <span className="font-medium text-xs sm:text-sm">{f.username}</span>
-                            </li>
-                          ))
-                        )}
-                      </ul>
-                    )}
-                  </div>
-                </Modal>
               )}
               {selectedPost && (
                 <FullScreenPostModal post={selectedPost} onClose={() => setSelectedPost(null)} />

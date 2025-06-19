@@ -1,13 +1,14 @@
 export interface Profile {
     id: number;
-    profile_picture: string;
-    username: string;
-    bio: string;
-    total_posts: number;
-    total_friends: number;
-    posts: any[];
-    tagged_posts: any[];
-    reactions: any[];
+    profile_picture?: string;
+    cover_photo?: string;
+    username?: string;
+    bio?: string;
+    total_posts?: number;
+    total_friends?: number;
+    posts?: any[];
+    tagged_posts?: any[];
+    reactions?: any[];
     post_photos: any[];
     user: {
       id: number;

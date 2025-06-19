@@ -113,6 +113,40 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
     }
   }
 
+  // Upload a new cover photo
+  async uploadCoverPhoto(file: File): Promise<Profile> {
+    try {
+      const formData = new FormData();
+      formData.append("cover_photo", file);
+
+      const response = await this.patch<ProfileResponse>("/", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (!response || !response.user) {
+        throw new Error("Invalid profile data received from the server");
+      }
+
+      return {
+        id: Number(response.user.id),
+        ...response,
+        post_photos: (response as any).post_photos ?? [],
+        user: {
+          id: Number(response.user.id),
+          joined_at: response.user.joined_at,
+          gender: response.user.gender,
+          email: response.user.email,
+          birthday: response.user.birthday,
+        },
+      };
+    } catch (error) {
+      console.error("Failed to upload cover photo:", error);
+      throw error;
+    }
+  }
+
   // Delete the logged-in user's account
   async deleteAccount(): Promise<void> {
     try {
@@ -151,6 +185,11 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
   // Fetch notifications for the logged-in user
   async getNotifications(): Promise<any[]> {
     return this.get<any[]>("/notifications/");
+  }
+
+  // Fetch friends for the logged-in user
+  async getFriends(): Promise<any[]> {
+    return this.get<any[]>(`/profile/list-friends/`);
   }
 }
 
