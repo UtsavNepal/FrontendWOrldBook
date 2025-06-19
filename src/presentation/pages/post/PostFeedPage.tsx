@@ -284,8 +284,8 @@ const PostFeedPage: React.FC = () => {
                         Post
                       </button>
                     </div>
-                    {/* Only render top-level comments at the root */}
-                    {renderComments(comments.filter(c => !(c as any).parent), post.id)}
+                    {/* Only render top-level comments at the root (no parent) */}
+                    {renderComments(comments, post.id)}
                   </div>
                 )}
               </div>
