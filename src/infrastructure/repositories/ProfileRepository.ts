@@ -3,6 +3,7 @@ import { BaseRepository } from "../base/BaseRepository";
 import { Profile } from "../../core/domain/entities/Profile.entity";
 
 export interface ProfileResponse {
+  id: number;
   profile_picture: string;
   username: string;
   bio: string;
@@ -35,8 +36,8 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
       }
 
       return {
-        id: Number(response.user.id),
         ...response,
+        id: Number(response.id),
         post_photos: (response as any).post_photos ?? [],
         user: {
           id: Number(response.user.id),
@@ -62,8 +63,8 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
       }
 
       return {
-        id: Number(response.user.id),
         ...response,
+        id: Number(response.id),
         post_photos: (response as any).post_photos ?? [],
         user: {
           id: Number(response.user.id),
@@ -96,8 +97,8 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
       }
 
       return {
-        id: Number(response.user.id),
         ...response,
+        id: Number(response.id),
         post_photos: (response as any).post_photos ?? [],
         user: {
           id: Number(response.user.id),
@@ -130,8 +131,8 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
       }
 
       return {
-        id: Number(response.user.id),
         ...response,
+        id: Number(response.id),
         post_photos: (response as any).post_photos ?? [],
         user: {
           id: Number(response.user.id),
@@ -200,8 +201,8 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
         throw new Error("Invalid profile data received from the server");
       }
       return {
-        id: Number(response.user.id),
         ...response,
+        id: Number(response.user.id),
         post_photos: (response as any).post_photos ?? [],
         user: {
           id: Number(response.user.id),
@@ -225,8 +226,8 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
         throw new Error("Invalid profile data received from the server");
       }
       return {
-        id: Number(response.user.id),
         ...response,
+        id: Number(response.user.id),
         post_photos: (response as any).post_photos ?? [],
         user: {
           id: Number(response.user.id),
@@ -240,6 +241,11 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
       console.error("Failed to remove cover photo:", error);
       throw error;
     }
+  }
+
+  // Fetch friends for a specific user (by profile ID)
+  async getFriendsForUser(profileId: string | number): Promise<any[]> {
+    return this.get<any[]>(`/profiles/${profileId}/friends/`);
   }
 }
 

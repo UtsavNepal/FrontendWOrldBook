@@ -8,9 +8,10 @@ import { friendRepository } from '../../../infrastructure/repositories/FriendRep
 import { postRepository } from '../../../infrastructure/repositories/PostRepository';
 import Spinner from "../../ui/Spinner";
 import { getImageUrl } from '../../../utils/getImageUrl';
+import UserListItem from "../../components/UserListItem";
+import { useFriendContext } from "../../../core/application/context/FriendContext";
+import { useProfile } from "../../../core/application/context/ProfileContext";
 
-
-const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 const UserProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,7 +34,9 @@ const UserProfilePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'posts' | 'followers' | 'following' | 'friends'>('posts');
   const [friendsList, setFriendsList] = useState<any[]>([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
- 
+  const { unfriend } = useFriendContext();
+  const { profile: authProfile } = useProfile();
+
   const receivedRequestFromUser = receivedRequests.find((r: any) => r.from_user.id === Number(id));
   const sentRequestToUser = sentRequests.find((r: any) => r.to_user.id === Number(id));
 
@@ -143,12 +146,13 @@ const UserProfilePage: React.FC = () => {
     setShowFollowDropdown(false);
   };
 
-  const handleUnfriend = async () => {
+  const handleUnfriend = async (userId: number) => {
     try {
-      await friendRepository.unfriend(profile!.user.id);
+      await unfriend(userId);
       setProfile(profile => profile ? { ...profile, is_friend: false } : profile);
       setFriendRequestId(null);
       await refreshData();
+      await fetchFriendsList();
     } catch (error) {
       console.error('Error unfriending:', error);
     }
@@ -191,12 +195,17 @@ const UserProfilePage: React.FC = () => {
   const fetchFriendsList = async () => {
     setLoadingFriends(true);
     try {
-      const friends = await profileRepository.getFriends();
+      const friends = await profileRepository.getFriendsForUser(id!);
       setFriendsList(friends);
     } finally {
       setLoadingFriends(false);
     }
   };
+
+  if (profile && user && profile.id === user.profile?.id) {
+    navigate('/welcome', { replace: true });
+    return null;
+  }
 
   if (loading) return <Spinner />;
   if (!profile) return <div>Profile not found.</div>;
@@ -259,7 +268,7 @@ const UserProfilePage: React.FC = () => {
                         )}
                         <button
                           className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600"
-                          onClick={() => { handleUnfriend(); setShowFollowDropdown(false); }}
+                          onClick={() => { handleUnfriend(profile!.user.id); setShowFollowDropdown(false); }}
                         >
                           Unfriend
                         </button>
@@ -383,8 +392,16 @@ const UserProfilePage: React.FC = () => {
           {activeTab === 'followers' && (
             <div className="mt-2">
               {loadingFollowers ? <Spinner /> : (
-                <ul>
-                  {followersList.length === 0 ? <li>No followers yet.</li> : followersList.map(f => <li key={f.id}>{f.user?.username}</li>)}
+                <ul className="space-y-4">
+                  {followersList.filter(f => f.id !== user?.profile?.id).length === 0 ? <li>No followers yet.</li> : followersList.filter(f => f.id !== user?.profile?.id).map(f => (
+                    <UserListItem
+                    key={f.id}
+                    user={f}
+                    type="following"
+                    onUnfollow={handleUnfollow}
+                    authenticatedProfileId={authProfile?.id}
+                  />
+                  ))}
                 </ul>
               )}
             </div>
@@ -392,25 +409,22 @@ const UserProfilePage: React.FC = () => {
           {activeTab === 'following' && (
             <div className="mt-2">
               {loadingFollowing ? <Spinner /> : (
-                <ul>
-                  {followingList.length === 0 ? <li>Not following anyone yet.</li> : followingList.map(f => <li key={f.id}>{f.user?.username}</li>)}
+                <ul className="space-y-4">
+                  {followingList.length === 0 ? <li>Not following anyone yet.</li> : followingList.map(f => (
+                    <UserListItem key={f.id} user={f} type="following" onUnfollow={handleUnfollow} />
+                  ))}
                 </ul>
               )}
             </div>
           )}
           {activeTab === 'friends' && (
-            <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <div className="mt-2">
               {loadingFriends ? <Spinner /> : (
-                friendsList.length === 0 ? <div className="col-span-full">No friends yet.</div> : friendsList.map(f => (
-                  <div key={f.id} className="flex flex-col items-center bg-gray-100 rounded-lg p-3 shadow">
-                    <img
-                      src={f.profile_picture ? getImageUrl(f.profile_picture) || '' : '/default-avatar.png'}
-                      alt={f.user?.username || 'Friend'}
-                      className="w-16 h-16 rounded-full object-cover mb-2 border-2 border-white shadow"
-                    />
-                    <span className="font-semibold text-gray-800">{f.username}</span>
-                  </div>
-                ))
+                <ul className="space-y-4">
+                  {friendsList.filter(f => f.id !== user?.profile?.id && f.id !== profile?.id).length === 0 ? <div className="col-span-full">No friends yet.</div> : friendsList.filter(f => f.id !== user?.profile?.id && f.id !== profile?.id).map(f => (
+                    <UserListItem key={f.id} user={f} type="friends" onUnfriend={handleUnfriend} authenticatedProfileId={authProfile?.id} />
+                  ))}
+                </ul>
               )}
             </div>
           )}

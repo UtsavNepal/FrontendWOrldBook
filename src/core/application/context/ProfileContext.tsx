@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useState } from "react";
+import { createContext, useContext, ReactNode, useState, useEffect } from "react";
 import { Profile } from "../../domain/entities/Profile.entity";
 import { ProfileRepository } from "../../../infrastructure/repositories/ProfileRepository";
 
@@ -43,6 +43,11 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
       setProfile(null); 
     }
   };
+
+  useEffect(() => {
+    fetchProfile();
+    // eslint-disable-next-line
+  }, []);
 
   // Update the logged-in user's profile
   const updateProfile = async (updatedData: Partial<Profile>) => {

@@ -14,6 +14,7 @@ interface FriendContextType {
   isRequestReceived: (userId: number) => boolean;
   getFriendRequests: () => Promise<void>;
   fetchOtherUsersProfiles: () => Promise<void>;
+  unfriend: (userId: number) => Promise<void>;
 }
 
 interface FriendProviderProps {
@@ -54,6 +55,10 @@ export const FriendProvider: React.FC<FriendProviderProps> = ({ children }) => {
     await getFriendRequests();
   };
 
+  const unfriend = async (userId: number) => {
+    await friendRepository.unfriend(userId);
+  };
+
   // Check if a request has been sent to a specific user
   const isRequestSent = (userId: number): boolean => {
     if (!user) return false;
@@ -82,6 +87,7 @@ export const FriendProvider: React.FC<FriendProviderProps> = ({ children }) => {
         isRequestReceived,
         getFriendRequests,
         fetchOtherUsersProfiles,
+        unfriend
       }}
     >
       {children}

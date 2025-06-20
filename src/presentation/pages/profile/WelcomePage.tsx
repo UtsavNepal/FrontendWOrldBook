@@ -14,6 +14,8 @@ import FullScreenPostModal from "../modal/FullScreenPostModal";
 import { Post } from "../../../core/domain/entities/Post";
 import MainLayout from "../../components/MainLayout";
 import { getImageUrl } from "../../../utils/getImageUrl";
+import UserListItem from "../../components/UserListItem";
+import { useFriendContext } from "../../../core/application/context/FriendContext";
 
 
 const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL;
@@ -55,9 +57,10 @@ export const WelcomePage = () => {
   const [viewPicModal, setViewPicModal] = useState<null | 'profile' | 'cover'>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [openDropdownPostId, setOpenDropdownPostId] = useState<number | null>(null);
-  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [, setEditingPost] = useState<Post | null>(null);
   const [replyToCommentId, setReplyToCommentId] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
+  const { unfriend } = useFriendContext();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -201,6 +204,21 @@ export const WelcomePage = () => {
     } finally {
       setLoadingFriends(false);
     }
+  };
+
+  const handleFollow = async (userId: number) => {
+    await profileRepository.followUser(userId);
+    fetchFollowingList();
+  };
+
+  const handleUnfollow = async (userId: number) => {
+    await profileRepository.unfollowUser(userId);
+    fetchFollowingList();
+  };
+
+  const handleUnfriend = async (userId: number) => {
+    await unfriend(userId);
+    fetchFriendsList();
   };
 
   // Handler for upload
@@ -485,8 +503,10 @@ export const WelcomePage = () => {
                 {activeTab === 'followers' && (
                   <div className="mt-2">
                     {loadingFollowers ? <Spinner /> : (
-                      <ul>
-                        {followersList.length === 0 ? <li>No followers yet.</li> : followersList.map(f => <li key={f.id}>{f.user?.username}</li>)}
+                      <ul className="space-y-4">
+                        {followersList.filter(f => f.id !== profile?.id).length === 0 ? <li>No followers yet.</li> : followersList.filter(f => f.id !== profile?.id).map(f => (
+                          <UserListItem key={f.id} user={f} type="followers" onFollow={handleFollow} authenticatedProfileId={profile?.id} />
+                        ))}
                       </ul>
                     )}
                   </div>
@@ -494,8 +514,10 @@ export const WelcomePage = () => {
                 {activeTab === 'following' && (
                   <div className="mt-2">
                     {loadingFollowing ? <Spinner /> : (
-                      <ul>
-                        {followingList.length === 0 ? <li>Not following anyone yet.</li> : followingList.map(f => <li key={f.id}>{f.user?.username}</li>)}
+                      <ul className="space-y-4">
+                        {followingList.filter(f => f.id !== profile?.id).length === 0 ? <li>Not following anyone yet.</li> : followingList.filter(f => f.id !== profile?.id).map(f => (
+                          <UserListItem key={f.id} user={f} type="following" onUnfollow={handleUnfollow} authenticatedProfileId={profile?.id} />
+                        ))}
                       </ul>
                     )}
                   </div>
@@ -503,8 +525,10 @@ export const WelcomePage = () => {
                 {activeTab === 'friends' && (
                   <div className="mt-2">
                     {loadingFriends ? <Spinner /> : (
-                      <ul>
-                        {friendsList.length === 0 ? <li>No friends yet.</li> : friendsList.map(f => <li key={f.id}>{f.user?.username}</li>)}
+                      <ul className="space-y-4">
+                        {friendsList.filter(f => f.id !== profile?.id).length === 0 ? <li>No friends yet.</li> : friendsList.filter(f => f.id !== profile?.id).map(f => (
+                          <UserListItem key={f.id} user={f} type="friends" onUnfriend={handleUnfriend} authenticatedProfileId={profile?.id} />
+                        ))}
                       </ul>
                     )}
                   </div>
