@@ -30,7 +30,7 @@ const UserProfilePage: React.FC = () => {
   const [friendRequestId, setFriendRequestId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
   const [commentingPostId, setCommentingPostId] = useState<number | null>(null);
-  const [posts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'posts' | 'followers' | 'following' | 'friends'>('posts');
   const [friendsList, setFriendsList] = useState<any[]>([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
@@ -58,8 +58,10 @@ const UserProfilePage: React.FC = () => {
       try {
         const res = await profileRepository.getPublicProfile(id!);
         setProfile(res);
+        setPosts(res.posts || []);
       } catch (err) {
         setProfile(null);
+        setPosts([]);
       } finally {
         setLoading(false);
       }
@@ -165,8 +167,10 @@ const UserProfilePage: React.FC = () => {
     try {
       const res = await profileRepository.getPublicProfile(id!);
       setProfile(res);
+      setPosts(res.posts || []);
     } catch (err) {
       setProfile(null);
+      setPosts([]);
     } finally {
       setLoading(false);
     }
