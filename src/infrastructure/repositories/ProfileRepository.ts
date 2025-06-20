@@ -189,7 +189,7 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
 
   // Fetch friends for the logged-in user
   async getFriends(): Promise<any[]> {
-    return this.get<any[]>(`/profile/list-friends/`);
+    return this.get<any[]>(`/list-friends/`);
   }
 
   // Remove profile picture

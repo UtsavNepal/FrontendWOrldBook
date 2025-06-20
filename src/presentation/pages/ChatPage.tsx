@@ -49,6 +49,7 @@ const ChatPage: React.FC = () => {
     profile,
     fetchConversations,
     fetchUsers,
+    error,
   } = useChatContext();
   
   const { user, isAuthLoading } = useAuth();
@@ -157,6 +158,11 @@ const ChatPage: React.FC = () => {
 
   return (
     <MainLayout>
+      {error && (
+        <div className="bg-red-100 text-red-700 px-4 py-2 text-center font-semibold">
+          {error}
+        </div>
+      )}
       <div className="flex flex-col md:flex-row bg-gray-50 overflow-hidden h-screen w-full">
         {/* Sidebar */}
         <aside className="w-full md:w-72 bg-white border-r h-64 md:h-screen flex flex-col">
@@ -302,11 +308,9 @@ const ChatPage: React.FC = () => {
                             alt={getFullName(msg.sender)}
                             className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
                           />
-                          <div>
-                            <div className="text-xs text-gray-500 mb-1">
-                              {getFullName(msg.sender)}
-                            </div>
-                            {msg.text && <div className="whitespace-pre-wrap text-sm sm:text-base">{msg.text}</div>}
+                          <div className={`max-w-xs sm:max-w-md px-4 py-2 rounded-2xl shadow text-sm sm:text-base ${isSent ? "bg-blue-500 text-white rounded-br-none" : "bg-gray-200 text-gray-900 rounded-bl-none"}`}>
+                            <div className="text-xs text-gray-300 mb-1 font-semibold">{getFullName(msg.sender)}</div>
+                            {msg.text && <div className="whitespace-pre-wrap break-words">{msg.text}</div>}
                             {msg.image && (
                               <img src={msg.image} alt="attachment" className="max-h-40 rounded mt-2" />
                             )}
@@ -315,9 +319,7 @@ const ChatPage: React.FC = () => {
                             )}
                             <div className="flex items-center mt-1 space-x-1 relative">
                               {msg.reactions.map(r => (
-                                <span key={r.id} className="text-lg cursor-pointer">
-                                  {r.emoji}
-                                </span>
+                                <span key={r.id} className="text-lg cursor-pointer">{r.emoji}</span>
                               ))}
                               <button
                                 className="ml-2 text-xs text-gray-400 hover:text-gray-600"
@@ -346,6 +348,7 @@ const ChatPage: React.FC = () => {
                                 </div>
                               )}
                             </div>
+                            <div className={`text-[10px] mt-1 ${isSent ? "text-blue-200" : "text-gray-500"}`}>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                           </div>
                         </div>
                       </div>
