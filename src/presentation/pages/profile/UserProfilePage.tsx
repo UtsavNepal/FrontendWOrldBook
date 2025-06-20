@@ -411,7 +411,7 @@ const UserProfilePage: React.FC = () => {
               {loadingFollowing ? <Spinner /> : (
                 <ul className="space-y-4">
                   {followingList.length === 0 ? <li>Not following anyone yet.</li> : followingList.map(f => (
-                    <UserListItem key={f.id} user={f} type="following" onUnfollow={handleUnfollow} />
+                    <UserListItem key={f.id} user={f} type="following" onUnfollow={handleUnfollow} authenticatedProfileId={authProfile?.id} />
                   ))}
                 </ul>
               )}
