@@ -29,7 +29,7 @@ const UserListItem: React.FC<UserListItemProps> = ({ user, type, onUnfollow, onF
     if (!dropdownOpen && dropdownContainerRef.current) {
       const { bottom } = dropdownContainerRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - bottom;
-      if (spaceBelow < 150) { // 150px is a safe estimate for dropdown height
+      if (spaceBelow < 150) { 
         setDropdownPositionClass('bottom-full mb-2');
       } else {
         setDropdownPositionClass('top-full mt-2');
@@ -56,23 +56,23 @@ const UserListItem: React.FC<UserListItemProps> = ({ user, type, onUnfollow, onF
   console.log('UserListItem', { userId: user.id, authenticatedProfileId });
 
   return (
-    <li className="flex items-center justify-between p-4 bg-white rounded-lg shadow">
+    <li className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
       <div className="flex items-center gap-4">
         <img
           src={getImageUrl(user.profile_picture)}
           alt={username}
           className="w-14 h-14 rounded-full object-cover"
         />
-        <span className="font-semibold text-lg">{username}</span>
+        <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{username}</span>
       </div>
       {!isSelf && (
         <div className="relative" ref={dropdownContainerRef}>
-          <button onClick={handleToggleDropdown} className="px-4 py-2 bg-gray-200 rounded-md flex items-center">
+          <button onClick={handleToggleDropdown} className="px-4 py-2 bg-gray-200 dark:bg-gray-900 text-gray-800 dark:text-gray-100 rounded-md flex items-center">
             View Profile <span className="ml-2">↓</span>
           </button>
           {dropdownOpen && (
-            <div className={`absolute right-0 w-48 bg-white border rounded-lg shadow-lg z-10 ${dropdownPositionClass}`}>
-              <Link to={`/profile/${user.id}`} className="block w-full text-left px-4 py-2 hover:bg-gray-100">
+            <div className={`absolute right-0 w-48 bg-white dark:bg-gray-900 border rounded-lg shadow-lg z-10 ${dropdownPositionClass}`}>
+              <Link to={`/profile/${user.id}`} className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-100">
                 View Profile
               </Link>
               {type === 'following' && onUnfollow && (
@@ -81,7 +81,7 @@ const UserListItem: React.FC<UserListItemProps> = ({ user, type, onUnfollow, onF
                     onUnfollow(user.id);
                     setDropdownOpen(false);
                   }}
-                  className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500"
+                  className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-red-500"
                 >
                   Unfollow
                 </button>
@@ -92,7 +92,7 @@ const UserListItem: React.FC<UserListItemProps> = ({ user, type, onUnfollow, onF
                     onFollow(user.id);
                     setDropdownOpen(false);
                   }}
-                  className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                  className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-100"
                 >
                   Follow Back
                 </button>
@@ -103,7 +103,7 @@ const UserListItem: React.FC<UserListItemProps> = ({ user, type, onUnfollow, onF
                     onUnfriend(user.id);
                     setDropdownOpen(false);
                   }}
-                  className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500"
+                  className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-red-500"
                 >
                   Unfriend
                 </button>

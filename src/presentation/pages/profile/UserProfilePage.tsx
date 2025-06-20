@@ -218,7 +218,7 @@ const UserProfilePage: React.FC = () => {
     <MainLayout>
       <div className="flex flex-col items-center bg-gray-50 min-h-screen w-full">
         {/* Cover Photo */}
-        <div className="w-full relative h-48 sm:h-64 md:h-72 bg-gray-300">
+        <div className="w-full relative h-48 sm:h-64 md:h-72 bg-gray-300 dark:bg-gray-700">
           <img
             src={profile.cover_photo ? getImageUrl(profile.cover_photo) || '' : '/default-cover.jpg'}
             alt="Cover"
@@ -229,7 +229,7 @@ const UserProfilePage: React.FC = () => {
             <img
               src={profile.profile_picture ? getImageUrl(profile.profile_picture) || '' : '/default-avatar.png'}
               alt="Profile"
-              className="w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-full object-cover border-4 border-white shadow-lg bg-gray-200"
+              className="w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-full object-cover border-4 border-white shadow-lg bg-gray-200 dark:bg-gray-900"
             />
           </div>
         </div>
@@ -237,8 +237,8 @@ const UserProfilePage: React.FC = () => {
         <div className="flex flex-col sm:flex-row justify-between w-full max-w-4xl mt-16 px-4 gap-4">
           
           <div className="flex flex-col items-start flex-1 min-w-[200px]">
-            <div className="text-2xl font-bold text-gray-800 mt-2">{profile.username}</div>
-            <div className="text-base text-gray-700 mb-2">{profile.bio}</div>
+            <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mt-2">{profile.username}</div>
+            <div className="text-base text-gray-700 dark:text-gray-300 mb-2">{profile.bio}</div>
           </div>
           {/* Right: Actions */}
           <div className="flex flex-col items-end gap-2 min-w-[220px]">
@@ -248,30 +248,30 @@ const UserProfilePage: React.FC = () => {
                   <div className="relative">
                     <button
                       onClick={() => setShowFollowDropdown((v) => !v)}
-                      className="border border-gray-300 text-gray-700 px-2 py-1 rounded bg-white hover:bg-gray-100 flex items-center gap-2"
+                      className="border border-gray-300 text-gray-700 dark:text-gray-300 px-2 py-1 rounded bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                     >
                       Friends
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
                     </button>
                     {showFollowDropdown && (
-                      <div className="absolute left-0 mt-2 bg-white border rounded shadow z-10 min-w-[140px]">
+                      <div className="absolute left-0 mt-2 bg-white dark:bg-gray-900 border rounded shadow z-10 min-w-[140px]">
                         {following ? (
                           <button
-                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                             onClick={() => { handleUnfollow(); setShowFollowDropdown(false); }}
                           >
                             Unfollow
                           </button>
                         ) : (
                           <button
-                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                             onClick={() => { handleFollow(); setShowFollowDropdown(false); }}
                           >
                             Follow
                           </button>
                         )}
                         <button
-                          className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600"
+                          className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-red-600 dark:text-red-400"
                           onClick={() => { handleUnfriend(profile!.user.id); setShowFollowDropdown(false); }}
                         >
                           Unfriend
@@ -288,7 +288,7 @@ const UserProfilePage: React.FC = () => {
                         setReceivedRequests(requests => requests.filter((r: any) => r.id !== receivedRequestFromUser.id));
                         await refreshData();
                       }}
-                      className="border border-gray-300 text-gray-700 px-2 py-1 rounded bg-white hover:bg-gray-100"
+                      className="border border-gray-300 text-gray-700 dark:text-gray-300 px-2 py-1 rounded bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       Accept
                     </button>
@@ -298,7 +298,7 @@ const UserProfilePage: React.FC = () => {
                         setReceivedRequests(requests => requests.filter((r: any) => r.id !== receivedRequestFromUser.id));
                         await refreshData();
                       }}
-                      className="border border-gray-300 text-gray-700 px-2 py-1 rounded bg-white hover:bg-gray-100"
+                      className="border border-gray-300 text-gray-700 dark:text-gray-300 px-2 py-1 rounded bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       Reject
                     </button>
@@ -308,7 +308,7 @@ const UserProfilePage: React.FC = () => {
                     <span className="text-gray-500">Friend Request Sent</span>
                     <button
                       onClick={() => handleCancelFriendRequest()}
-                      className="border border-gray-300 text-gray-700 px-2 py-1 rounded bg-white hover:bg-gray-100"
+                      className="border border-gray-300 text-gray-700 dark:text-gray-300 px-2 py-1 rounded bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       Cancel Request
                     </button>
@@ -316,13 +316,13 @@ const UserProfilePage: React.FC = () => {
                 ) : (
                   <button
                     onClick={handleSendFriendRequest}
-                    className="border border-gray-300 text-gray-700 px-2 py-1 rounded bg-white hover:bg-gray-100"
+                    className="border border-gray-300 text-gray-700 dark:text-gray-300 px-2 py-1 rounded bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     Add Friend
                   </button>
                 )}
                 <button
-                  className="border border-gray-300 text-gray-700 px-2 py-1 rounded bg-white hover:bg-gray-100"
+                  className="border border-gray-300 text-gray-700 dark:text-gray-300 px-2 py-1 rounded bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
                   onClick={() => navigate(`/chat?user=${id}`)}
                 >
                   Message
@@ -333,14 +333,14 @@ const UserProfilePage: React.FC = () => {
           </div>
         </div>
         {/* Tabs */}
-        <div className="flex justify-center gap-8 border-b pb-2 mb-4 mt-8 w-full max-w-4xl">
-          <button className={`px-4 py-2 font-semibold ${activeTab === 'posts' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => setActiveTab('posts')}>Posts </button>
-          <button className={`px-4 py-2 font-semibold ${activeTab === 'followers' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('followers'); fetchFollowersList(); }}>Followers </button>
-          <button className={`px-4 py-2 font-semibold ${activeTab === 'following' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('following'); fetchFollowingList(); }}>Following </button>
-          <button className={`px-4 py-2 font-semibold ${activeTab === 'friends' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('friends'); fetchFriendsList(); }}>Friends </button>
+        <div className="flex flex-wrap sm:flex-nowrap justify-center gap-2 sm:gap-8 border-b pb-2 mb-4 mt-8 w-full max-w-4xl overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300">
+          <button className={`px-2 sm:px-4 py-1 sm:py-2 text-sm sm:text-base font-semibold whitespace-nowrap ${activeTab === 'posts' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => setActiveTab('posts')}>Posts </button>
+          <button className={`px-2 sm:px-4 py-1 sm:py-2 text-sm sm:text-base font-semibold whitespace-nowrap ${activeTab === 'followers' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('followers'); fetchFollowersList(); }}>Followers </button>
+          <button className={`px-2 sm:px-4 py-1 sm:py-2 text-sm sm:text-base font-semibold whitespace-nowrap ${activeTab === 'following' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('following'); fetchFollowingList(); }}>Following </button>
+          <button className={`px-2 sm:px-4 py-1 sm:py-2 text-sm sm:text-base font-semibold whitespace-nowrap ${activeTab === 'friends' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('friends'); fetchFriendsList(); }}>Friends </button>
         </div>
         {/* Tab Content */}
-        <div className="w-full max-w-xl p-2 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg shadow-md mt-8 mx-auto flex-1 h-full">
+        <div className="w-full max-w-xl p-2 sm:p-4 md:p-6 lg:p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md mt-8 mx-auto flex-1 h-full">
           {activeTab === 'posts' && (
             <div>
               {posts.length === 0 && <div>No posts to show.</div>}

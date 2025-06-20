@@ -111,11 +111,11 @@ const FriendPage: React.FC = () => {
 
   return (
     <MainLayout>
-      <div className="min-h-screen flex justify-center items-start bg-gray-100 pl-0 sm:pl-0 md:pl-0 py-8">
+      <div className="min-h-screen flex justify-center items-start bg-gray-100 dark:bg-gray-900 pl-0 sm:pl-0 md:pl-0 py-8">
         <div className="w-full max-w-2xl px-2 sm:px-4 md:px-6 lg:px-8 flex-1 h-full">
           {fetchError && <div className="text-red-500 mb-4">{fetchError}</div>}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Your Friends</h1>
+            <h1 className="text-3xl font-bold mb-6 text-center text-gray-800 dark:text-gray-100">Your Friends</h1>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {uniqueFriends.length === 0 && (
                 <div className="col-span-full text-center text-gray-500 bg-white rounded-lg shadow p-6">No friends yet.</div>

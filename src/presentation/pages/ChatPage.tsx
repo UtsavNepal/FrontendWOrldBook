@@ -3,6 +3,7 @@ import { useChatContext } from "../../core/application/context/ChatContext";
 import { useAuth } from "../../core/application/context/AuthContext";
 import { Profile, User } from "../../core/domain/entities/Chat.entity";
 import MainLayout from "../components/MainLayout";
+import { Emoji, EmojiStyle } from 'emoji-picker-react'; // <-- import EmojiStyle
 
 const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -13,7 +14,6 @@ const getImageUrl = (path?: string | null): string => {
 };
 
 const getUserProfilePicture = (userId: number, profiles: Profile[]): string => {
- 
   const { user } = useAuth();
   if (user && userId === user.id) {
     return user.profile_picture ? getImageUrl(user.profile_picture) : '/default-avatar.png';
@@ -32,7 +32,14 @@ const getFullName = (user: User): string => {
          "Unknown";
 };
 
-const emojiOptions = ['👍', '😂', '❤️', '😮', '😢', '👏'];
+const emojiOptions = [
+  { unified: '1f44d', label: '👍' },
+  { unified: '1f602', label: '😂' },
+  { unified: '2764', label: '❤️' },
+  { unified: '1f62e', label: '😮' },
+  { unified: '1f622', label: '😢' },
+  { unified: '1f44f', label: '👏' },
+];
 
 const ChatPage: React.FC = () => {
   const {
@@ -319,7 +326,9 @@ const ChatPage: React.FC = () => {
                             )}
                             <div className="flex items-center mt-1 space-x-1 relative">
                               {msg.reactions.map(r => (
-                                <span key={r.id} className="text-lg cursor-pointer">{r.emoji}</span>
+                                <span key={r.id} className="text-lg cursor-pointer">
+                                  <Emoji unified={emojiOptions.find(e => e.label === r.emoji)?.unified || '1f44d'} size={24} emojiStyle={EmojiStyle.APPLE} />
+                                </span>
                               ))}
                               <button
                                 className="ml-2 text-xs text-gray-400 hover:text-gray-600"
@@ -331,18 +340,18 @@ const ChatPage: React.FC = () => {
                                 ⋯
                               </button>
                               {openReactionDropdown === msg.id && (
-                                <div className="absolute z-10 bottom-full left-0 bg-white border rounded shadow p-2 flex gap-2">
+                                <div className="absolute z-50 bottom-full left-0 bg-white border rounded shadow p-2 flex gap-2">
                                   {emojiOptions.map(emoji => (
                                     <button
-                                      key={emoji}
+                                      key={emoji.unified}
                                       className="text-lg"
                                       type="button"
                                       onClick={() => {
-                                        reactToMessage(msg.id, emoji);
+                                        reactToMessage(msg.id, emoji.label);
                                         setOpenReactionDropdown(null);
                                       }}
                                     >
-                                      {emoji}
+                                      <Emoji unified={emoji.unified} size={28} emojiStyle={EmojiStyle.APPLE} />
                                     </button>
                                   ))}
                                 </div>

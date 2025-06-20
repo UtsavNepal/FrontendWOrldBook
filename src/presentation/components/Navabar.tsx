@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
@@ -12,6 +12,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { useAuth } from "../../core/application/context/AuthContext";
+import { profileRepository } from "../../infrastructure/repositories/ProfileRepository";
 
 const navItems = [
   { path: "/welcome", label: "Home", icon: <Home size={24} /> },
@@ -29,6 +30,23 @@ const Navbar: React.FC = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const notifications = await profileRepository.getNotifications();
+        const unread = notifications.filter((n: any) => n.is_read === false).length;
+        setUnreadCount(unread);
+      } catch (e) {
+        setUnreadCount(0);
+      }
+    };
+    fetchNotifications();
+    // Optionally, poll every 30s for live updates
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Sidebar content for reuse
   const sidebarContent = (
@@ -41,7 +59,20 @@ const Navbar: React.FC = () => {
           className={`flex items-center gap-4 w-full py-3 px-4 rounded-lg transition-colors duration-200 text-base font-medium
             ${location.pathname.startsWith(item.path) ? "bg-gray-100 text-black" : "text-gray-700 hover:bg-gray-50"}`}
         >
-          <span>{item.icon}</span>
+          <span className="relative">
+            {item.label === "Notifications" ? (
+              <>
+                <Heart size={24} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[18px] text-center font-bold border border-white">
+                    {unreadCount}
+                  </span>
+                )}
+              </>
+            ) : (
+              item.icon
+            )}
+          </span>
           <span className="inline-block">{item.label}</span>
         </Link>
       ))}
@@ -57,14 +88,16 @@ const Navbar: React.FC = () => {
 
   return (
     <>
-      {/* Hamburger menu for mobile, always visible */}
-      <button
-        className="fixed top-4 left-4 z-50 md:hidden bg-white rounded-full p-2 shadow border border-gray-200"
-        aria-label="Open navigation menu"
-        onClick={() => setSidebarOpen((open) => !open)}
-      >
-        <Menu size={28} />
-      </button>
+      {/* Hamburger menu for mobile, hidden when sidebar is open */}
+      {!sidebarOpen && (
+        <button
+          className="fixed top-4 left-4 z-50 md:hidden bg-white rounded-full p-2 shadow border border-gray-200"
+          aria-label="Open navigation menu"
+          onClick={() => setSidebarOpen((open) => !open)}
+        >
+          <Menu size={28} />
+        </button>
+      )}
       {/* Sidebar for desktop */}
       <nav className="hidden md:flex fixed top-0 left-0 h-screen w-56 bg-white border-r border-gray-200 flex-col items-center py-6 shadow-md z-40">
         {sidebarContent}

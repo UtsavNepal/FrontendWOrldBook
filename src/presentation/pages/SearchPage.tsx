@@ -40,7 +40,7 @@ const SearchPage: React.FC = () => {
     <MainLayout>
       <div className="min-h-screen flex flex-col md:flex-row bg-gray-50">
         {/* Left: Search and Recent */}
-        <div className="w-full md:w-96 max-w-full bg-white rounded-none md:rounded-l-lg p-4 sm:p-6 md:p-8 flex flex-col shadow-md" style={{ minHeight: "100vh" }}>
+        <div className="w-full md:w-96 max-w-full bg-white dark:bg-gray-800 rounded-none md:rounded-l-lg p-4 sm:p-6 md:p-8 flex flex-col shadow-md" style={{ minHeight: "100vh" }}>
           <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Search</h2>
           <div className="relative mb-4 sm:mb-6">
             <input
@@ -48,7 +48,7 @@ const SearchPage: React.FC = () => {
               value={query}
               onChange={handleSearch}
               placeholder="Search"
-              className="w-full p-2 sm:p-3 rounded bg-gray-200 text-base sm:text-lg focus:outline-none"
+              className="w-full p-2 sm:p-3 rounded bg-gray-200 dark:bg-gray-900 text-base sm:text-lg focus:outline-none"
             />
             {query && (
               <button
@@ -64,7 +64,7 @@ const SearchPage: React.FC = () => {
           </div>
           {/* On small screens, show suggestions below search/recent */}
           <div className="block md:hidden mt-8">
-            <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center text-gray-800">Suggested for you</h2>
+            <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center text-gray-800 dark:text-gray-100">Suggested for you</h2>
             {loading ? (
               <div className="text-center text-gray-500 text-sm sm:text-base">Searching...</div>
             ) : (
@@ -84,7 +84,7 @@ const SearchPage: React.FC = () => {
                       />
                       <div>
                         <div
-                          className="font-bold text-gray-800 cursor-pointer hover:underline text-sm sm:text-base"
+                          className="font-bold text-gray-800 dark:text-gray-100 cursor-pointer hover:underline text-sm sm:text-base"
                           onClick={() => navigate(`/profile/${user.id}`)}
                         >
                           {user.username}
@@ -107,7 +107,7 @@ const SearchPage: React.FC = () => {
         </div>
         {/* Right: Results (hidden on mobile, shown on desktop) */}
         <div className="hidden md:block flex-1 p-4 sm:p-8">
-          <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center text-gray-800">Suggested for you</h2>
+          <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center text-gray-800 dark:text-gray-100">Suggested for you</h2>
           {loading ? (
             <div className="text-center text-gray-500 text-sm sm:text-base">Searching...</div>
           ) : (
@@ -127,7 +127,7 @@ const SearchPage: React.FC = () => {
                     />
                     <div>
                       <div
-                        className="font-bold text-gray-800 cursor-pointer hover:underline text-sm sm:text-base"
+                        className="font-bold text-gray-800 dark:text-gray-100 cursor-pointer hover:underline text-sm sm:text-base"
                         onClick={() => navigate(`/profile/${user.id}`)}
                       >
                         {user.username}

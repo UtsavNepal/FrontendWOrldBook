@@ -243,9 +243,28 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
     }
   }
 
-  // Fetch friends for a specific user (by profile ID)
   async getFriendsForUser(profileId: string | number): Promise<any[]> {
     return this.get<any[]>(`/profiles/${profileId}/friends/`);
+  }
+
+  
+  async markNotificationRead(id: number): Promise<any> {
+    return this.patch<any>(`/notifications/${id}/`, { is_read: true });
+  }
+
+  // Mark all notifications as read
+  async markAllNotificationsRead(): Promise<any> {
+    return this.patch<any>(`/notifications/`, { all_read: true });
+  }
+
+  // Delete a notification by id
+  async deleteNotification(id: number): Promise<any> {
+    return this.delete(`/notifications/${id}/`);
+  }
+
+  // Mark a notification as unread
+  async markNotificationUnread(id: number): Promise<any> {
+    return this.patch<any>(`/notifications/${id}/`, { is_read: false });
   }
 }
 

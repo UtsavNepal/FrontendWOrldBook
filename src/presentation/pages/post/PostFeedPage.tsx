@@ -210,18 +210,18 @@ const PostFeedPage: React.FC = () => {
                     <div className="ml-auto relative">
                       <button
                         onClick={() => toggleDropdown(post.id)}
-                        className="text-gray-500 hover:text-gray-700"
+                        className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                       >
                         ⋮
                       </button>
                       {openDropdownPostId === post.id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg">
+                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 border rounded-lg shadow-lg">
                           <button
                             onClick={() => {
                               setEditingPost(post);
                               setOpenDropdownPostId(null);
                             }}
-                            className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800"
                           >
                             Edit
                           </button>
@@ -230,7 +230,7 @@ const PostFeedPage: React.FC = () => {
                               handleDelete(post.id);
                               setOpenDropdownPostId(null);
                             }}
-                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500"
+                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-red-500"
                           >
                             Delete
                           </button>

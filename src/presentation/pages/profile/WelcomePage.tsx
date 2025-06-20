@@ -61,7 +61,7 @@ export const WelcomePage = () => {
   const [replyToCommentId, setReplyToCommentId] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
   const { unfriend } = useFriendContext();
-
+  
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login");
@@ -371,7 +371,7 @@ export const WelcomePage = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </button>
-            <h1 className="text-2xl sm:text-3xl text-center mb-6">Demo of utsav's project!</h1>
+            <h1 className="text-2xl sm:text-3xl text-center mb-6 text-gray-800 dark:text-gray-100">Demo of utsav's project!</h1>
             {profile && (
               <div className="space-y-10">
                 {/* Profile Header Row */}
@@ -394,20 +394,20 @@ export const WelcomePage = () => {
                 </div>
                 {/* Username and Bio */}
                 <div className="flex flex-col sm:flex-row justify-between w-full max-w-4xl mt-16 px-4 gap-4">
-                  <div className="text-2xl font-bold text-gray-800 mt-8">{profile.username}</div>
-                  <div className="text-base text-gray-700 mt-1">{profile.bio}</div>
+                  <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mt-8">{profile.username}</div>
+                  <div className="text-base text-gray-700 dark:text-gray-300 mt-1">{profile.bio}</div>
                 </div>
                 {/* Tabs Row */}
-                <div className="flex justify-center gap-8 border-b pb-2 mb-4 mt-16 w-full">
-                  <button className={`px-4 py-2 font-semibold ${activeTab === 'posts' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => setActiveTab('posts')}>Posts</button>
-                  <button className={`px-4 py-2 font-semibold ${activeTab === 'followers' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('followers'); fetchFollowersList(); }}>Followers</button>
-                  <button className={`px-4 py-2 font-semibold ${activeTab === 'following' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('following'); fetchFollowingList(); }}>Following </button>
-                  <button className={`px-4 py-2 font-semibold ${activeTab === 'friends' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('friends'); fetchFriendsList(); }}>Friends </button>
+                <div className="flex flex-wrap sm:flex-nowrap justify-center gap-2 sm:gap-8 border-b pb-2 mb-4 mt-16 w-full overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300">
+                  <button className={`px-2 sm:px-4 py-1 sm:py-2 text-sm sm:text-base font-semibold whitespace-nowrap ${activeTab === 'posts' ? 'border-b-2 border-blue-500 text-blue-500 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`} onClick={() => setActiveTab('posts')}>Posts</button>
+                  <button className={`px-2 sm:px-4 py-1 sm:py-2 text-sm sm:text-base font-semibold whitespace-nowrap ${activeTab === 'followers' ? 'border-b-2 border-blue-500 text-blue-500 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`} onClick={() => { setActiveTab('followers'); fetchFollowersList(); }}>Followers</button>
+                  <button className={`px-2 sm:px-4 py-1 sm:py-2 text-sm sm:text-base font-semibold whitespace-nowrap ${activeTab === 'following' ? 'border-b-2 border-blue-500 text-blue-500 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`} onClick={() => { setActiveTab('following'); fetchFollowingList(); }}>Following </button>
+                  <button className={`px-2 sm:px-4 py-1 sm:py-2 text-sm sm:text-base font-semibold whitespace-nowrap ${activeTab === 'friends' ? 'border-b-2 border-blue-500 text-blue-500 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`} onClick={() => { setActiveTab('friends'); fetchFriendsList(); }}>Friends </button>
                 </div>
                 {activeTab === 'posts' && (
                   <div className="mt-2">
                     {userPosts.length === 0 ? (
-                      <div className="bg-gray-100 rounded-lg p-4 sm:p-8 text-center text-gray-500">No posts yet.</div>
+                      <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 sm:p-8 text-center text-gray-500 dark:text-gray-300">No posts yet.</div>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {userPosts.map((post) => (
@@ -452,7 +452,7 @@ export const WelcomePage = () => {
                                 </div>
                               )}
                             </div>
-                            {post.content && <p className="mb-2 text-xs sm:text-sm md:text-base">{post.content}</p>}
+                            {post.content && <p className="mb-2 text-xs sm:text-sm md:text-base text-gray-800 dark:text-gray-100">{post.content}</p>}
                             {post.image && (
                               <img
                                 src={`${BACKEND_BASE_URL}${post.image}`}

@@ -66,7 +66,7 @@ const ViewPostPage: React.FC = () => {
     <>
       <Navbar />
       <div className="min-h-screen flex justify-center items-start bg-gray-50 pl-20 sm:pl-24 md:pl-56">
-        <div className="w-full max-w-xl p-4 bg-white rounded-lg shadow-md mt-8 mx-auto">
+        <div className="w-full max-w-xl p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md mt-8 mx-auto">
           <div className="flex flex-col items-center mb-6">
             {post.image && (
               <img
@@ -83,13 +83,13 @@ const ViewPostPage: React.FC = () => {
                 onClick={() => navigate(`/profile/${post.profile?.id}`)}
               />
               <span
-                className="font-semibold text-gray-800 cursor-pointer hover:underline"
+                className="font-semibold text-gray-800 dark:text-gray-100 cursor-pointer hover:underline"
                 onClick={() => navigate(`/profile/${post.profile?.id}`)}
               >
                 {post.profile?.username}
               </span>
             </div>
-            <div className="text-gray-700 text-lg mb-2 w-full text-left">{post.content}</div>
+            <div className="text-gray-700 dark:text-gray-300 text-lg mb-2 w-full text-left">{post.content}</div>
             <div className="flex gap-4 mb-4 w-full">
               <button
                 onClick={handleLike}
@@ -121,7 +121,7 @@ const ViewPostPage: React.FC = () => {
               <ul className="divide-y divide-gray-100 mb-4">
                 {post.comments.map((comment: any) => (
                   <li key={comment.id} className="py-2">
-                    <span className="font-semibold text-gray-800">{comment.profile?.username}:</span> {comment.comment}
+                    <span className="font-semibold text-gray-800 dark:text-gray-100">{comment.profile?.username}:</span> {comment.comment}
                   </li>
                 ))}
               </ul>
