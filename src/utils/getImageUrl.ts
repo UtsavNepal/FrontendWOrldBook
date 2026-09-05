@@ -1,7 +1,25 @@
-const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL;
- 
+import { backendUrl } from "../config/api";
+
+export const EMPTY_PROFILE_IMAGE = "/profile_empty.svg";
+
+function hasMedia(path?: string | null): path is string {
+  return Boolean(path && path.trim());
+}
+
 export function getImageUrl(path?: string | null): string {
-  if (!path) return '/default-avatar.png';
-  if (path.startsWith('http')) return path;
-  return `${BACKEND_BASE_URL}${path}`;
-} 
+  if (!hasMedia(path)) return EMPTY_PROFILE_IMAGE;
+  if (path.startsWith("http")) return path;
+  return `${backendUrl}${path}`;
+}
+
+export function getPostImages(post?: { image?: string | null; images?: string[] | null } | null): string[] {
+  if (!post) return [];
+  if (Array.isArray(post.images) && post.images.length) return post.images.filter(Boolean);
+  return post.image ? [post.image] : [];
+}
+
+export function getCoverUrl(path?: string | null): string | null {
+  if (!hasMedia(path)) return null;
+  if (path.startsWith("http")) return path;
+  return `${backendUrl}${path}`;
+}

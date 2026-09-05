@@ -1,5 +1,5 @@
 export interface Profile {
-    id: number;
+    id: string;
     profile_picture?: string;
     cover_photo?: string;
     username?: string;
@@ -11,19 +11,22 @@ export interface Profile {
     reactions?: any[];
     post_photos: any[];
     user: {
-      id: number;
+      id: string;
       joined_at: string;
       gender: string;
       email: string;
       birthday: string;
     };
     friends?: {
-      id: number;
+      id: string;
       user: {
-        id: number;
+        id: string;
       };
     }[];
     total_followers?: number;
     total_following?: number;
     is_friend?: boolean;
+    friend_request_sent?: boolean;
+    friend_request_received?: boolean;
+    friend_request_id?: string | null;
   }

@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { Camera, ImagePlus, Trash2, X } from "lucide-react";
 import { useAuth } from "../../../core/application/context/AuthContext";
 import { useProfile } from "../../../core/application/context/ProfileContext";
 
@@ -11,14 +12,20 @@ import { usePostContext } from "../../../core/application/context/PostContext";
 
 import { profileRepository } from '../../../infrastructure/repositories/ProfileRepository';
 import FullScreenPostModal from "../modal/FullScreenPostModal";
+import EditPostModal from "../modal/EditPostModal";
 import { Post } from "../../../core/domain/entities/Post";
 import MainLayout from "../../components/MainLayout";
-import { getImageUrl } from "../../../utils/getImageUrl";
+import { getCoverUrl, getImageUrl } from "../../../utils/getImageUrl";
 import UserListItem from "../../components/UserListItem";
 import { useFriendContext } from "../../../core/application/context/FriendContext";
+import LikeButton from "../../components/LikeButton";
+import { useConfirm } from "../../components/useConfirm";
+import OptionsMenu, { isOwnedBy } from "../../components/OptionsMenu";
+import ProcessProgressBox from "../../components/ProcessProgressBox";
+import PostStoryMedia from "../../components/PostStoryMedia";
+import { runTimedProgress } from "../../../utils/runTimedProgress";
+import { postStoryLine, visibilityLabel } from "../../../utils/postStory";
 
-
-const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 export const WelcomePage = () => {
   const { isAuthenticated, logout, user } = useAuth();
@@ -37,11 +44,11 @@ export const WelcomePage = () => {
   const [loading, setLoading] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const { posts, likepost, commentOnPost, getComments, updateComment, deleteComment, deletePost } = usePostContext();
-  const [openCommentSectionId, setOpenCommentSectionId] = useState<number | null>(null);
+  const { posts, likepost, commentOnPost, getComments, updateComment, deleteComment, deletePost, fetchPosts } = usePostContext();
+  const [openCommentSectionId, setOpenCommentSectionId] = useState<string | null>(null);
   const [newComment, setNewComment] = useState("");
   const [comments, setComments] = useState<any[]>([]);
-  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editedComment, setEditedComment] = useState("");
   const [showProfilePicModal, setShowProfilePicModal] = useState(false);
  
@@ -53,14 +60,16 @@ export const WelcomePage = () => {
   const [activeTab, setActiveTab] = useState<'posts' | 'followers' | 'following' | 'friends'>('posts');
   const [friendsList, setFriendsList] = useState<any[]>([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
+  const [process, setProcess] = useState<{ label: string; percent: number } | null>(null);
   const [showPicOptions, setShowPicOptions] = useState<null | 'profile' | 'cover'>(null);
   const [viewPicModal, setViewPicModal] = useState<null | 'profile' | 'cover'>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [openDropdownPostId, setOpenDropdownPostId] = useState<number | null>(null);
-  const [, setEditingPost] = useState<Post | null>(null);
-  const [replyToCommentId, setReplyToCommentId] = useState<number | null>(null);
+  const uploadKindRef = useRef<'profile' | 'cover'>('profile');
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const { unfriend } = useFriendContext();
+  const { confirm, modal } = useConfirm();
   
   useEffect(() => {
     if (!isAuthenticated) {
@@ -81,7 +90,7 @@ export const WelcomePage = () => {
           break;
         case "profile_picture":
           if (updatedProfilePicture) {
-            await uploadProfilePicture(updatedProfilePicture);
+            await runPhotoUpload("Uploading profile picture", () => uploadProfilePicture(updatedProfilePicture));
           }
           return;
         case "bio":
@@ -104,11 +113,15 @@ export const WelcomePage = () => {
   };
 
   const handleDeleteAccount = async () => {
-    if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-      await deleteAccount();
-      logout();
-      navigate("/login");
-    }
+    const ok = await confirm({
+      title: "Delete account",
+      message: "Are you sure you want to delete your account? This action cannot be undone.",
+      confirmLabel: "Delete account",
+    });
+    if (!ok) return;
+    await deleteAccount();
+    logout();
+    navigate("/login");
   };
 
   const handleChangePassword = async () => {
@@ -129,7 +142,7 @@ export const WelcomePage = () => {
   const userPosts = posts.filter(post => post.profile?.user?.id === user?.id);
 
 
-  const fetchComments = async (postId: number) => {
+  const fetchComments = async (postId: string) => {
     try {
       const comments = await getComments(postId);
       setComments(comments);
@@ -139,7 +152,7 @@ export const WelcomePage = () => {
   };
 
   // Handle comment section open/close
-  const handleOpenComments = (postId: number) => {
+  const handleOpenComments = (postId: string) => {
     if (openCommentSectionId === postId) {
       setOpenCommentSectionId(null);
       setComments([]);
@@ -150,7 +163,7 @@ export const WelcomePage = () => {
   };
 
   // Handle comment submit
-  const handleCommentSubmit = async (postId: number) => {
+  const handleCommentSubmit = async (postId: string) => {
     if (newComment.trim()) {
       await commentOnPost(postId, newComment);
       setNewComment("");
@@ -159,7 +172,7 @@ export const WelcomePage = () => {
   };
 
   // Handle edit comment
-  const handleEditComment = async (commentId: number) => {
+  const handleEditComment = async (commentId: string) => {
     if (editedComment.trim()) {
       await updateComment(commentId, editedComment);
       setEditingCommentId(null);
@@ -169,11 +182,14 @@ export const WelcomePage = () => {
   };
 
   // Handle delete comment
-  const handleDeleteComment = async (commentId: number) => {
-    if (window.confirm("Are you sure you want to delete this comment?")) {
-      await deleteComment(commentId);
-      if (openCommentSectionId) fetchComments(openCommentSectionId);
-    }
+  const handleDeleteComment = async (commentId: string) => {
+    const ok = await confirm({
+      title: "Delete comment",
+      message: "Are you sure you want to delete this comment?",
+    });
+    if (!ok) return;
+    await deleteComment(commentId);
+    if (openCommentSectionId) fetchComments(openCommentSectionId);
   };
 
   const fetchFollowersList = async () => {
@@ -221,48 +237,74 @@ export const WelcomePage = () => {
     fetchFriendsList();
   };
 
-  // Handler for upload
+  const startUpload = (kind: "profile" | "cover") => {
+    uploadKindRef.current = kind;
+    setShowPicOptions(null);
+    fileInputRef.current?.click();
+  };
+
+  const runPhotoUpload = async (label: string, upload: () => Promise<void>) => {
+    setProcess({ label, percent: 1 });
+    try {
+      await Promise.all([
+        upload(),
+        runTimedProgress(5000, (percent) => {
+          setProcess((current) => (current ? { ...current, percent } : current));
+        }),
+      ]);
+      setProcess({ label, percent: 100 });
+      await Promise.all([fetchProfile(), fetchPosts()]);
+      await new Promise((resolve) => window.setTimeout(resolve, 350));
+    } finally {
+      setProcess(null);
+    }
+  };
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
-    if (showPicOptions === 'profile') {
-      await uploadProfilePicture(file);
-    } else if (showPicOptions === 'cover') {
-      await uploadCoverPhoto(file);
-    }
+    const isProfile = uploadKindRef.current === "profile";
+    await runPhotoUpload(
+      isProfile ? "Uploading profile picture" : "Uploading cover photo",
+      () => (isProfile ? uploadProfilePicture(file) : uploadCoverPhoto(file))
+    );
+    e.target.value = "";
+  };
+
+  const handleRemove = async (kind: "profile" | "cover") => {
+    const ok = await confirm({
+      title: kind === "profile" ? "Remove profile picture" : "Remove cover photo",
+      message: "This photo will be removed from your profile.",
+      confirmLabel: "Remove",
+    });
+    if (!ok) return;
+    if (kind === "profile") await removeProfilePicture();
+    else await removeCoverPhoto();
     await fetchProfile();
     setShowPicOptions(null);
   };
 
-  // Handler for remove
-  const handleRemove = async () => {
-    if (showPicOptions === 'profile') {
-      await removeProfilePicture();
-    } else if (showPicOptions === 'cover') {
-      await removeCoverPhoto();
+  const openPhoto = (kind: "profile" | "cover") => {
+    const hasPhoto = kind === "profile" ? Boolean(profile?.profile_picture) : Boolean(getCoverUrl(profile?.cover_photo));
+    if (!hasPhoto) {
+      startUpload(kind);
+      return;
     }
+    setShowPicOptions(null);
+    setViewPicModal(kind);
+  };
+
+  const handleDeletePost = async (id: string) => {
+    const ok = await confirm({
+      title: "Delete post",
+      message: "Are you sure you want to delete this post? This cannot be undone.",
+    });
+    if (!ok) return;
+    await deletePost(id);
     await fetchProfile();
-    setShowPicOptions(null);
   };
 
-  // Handler for view
-  const handleView = () => {
-    setViewPicModal(showPicOptions);
-    setShowPicOptions(null);
-  };
-
-  const toggleDropdown = (postId: number) => {
-    setOpenDropdownPostId(openDropdownPostId === postId ? null : postId);
-  };
-
-  const handleDeletePost = async (id: number) => {
-    if (window.confirm("Are you sure you want to delete this post?")) {
-      await deletePost(id);
-      await fetchProfile();
-    }
-  };
-
-  const handleReplySubmit = async (postId: number, parentId: number) => {
+  const handleReplySubmit = async (postId: string, parentId: string) => {
     if (replyText.trim()) {
       await commentOnPost(postId, replyText, parentId);
       setReplyText("");
@@ -271,81 +313,77 @@ export const WelcomePage = () => {
     }
   };
 
-  // Helper to render comments recursively
-  const renderComments = (commentsList: any[], postId: number) =>
+  const renderComments = (commentsList: any[], postId: string, isReply = false) =>
     [...commentsList].reverse().map((comment) => (
-      <div key={comment.id} className="ml-0 mb-2">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-xs sm:text-sm mr-2">{comment.profile?.username}:</span>
-          {editingCommentId === comment.id ? (
-            <>
-              <input
-                type="text"
-                value={editedComment}
-                onChange={(e) => setEditedComment(e.target.value)}
-                className="border p-1 rounded w-2/3 text-xs sm:text-sm"
-              />
-              <button
-                onClick={() => handleEditComment(comment.id)}
-                className="ml-2 bg-green-500 text-white px-2 py-1 rounded text-xs sm:text-sm"
-              >
-                Save
-              </button>
-              <button
-                onClick={() => setEditingCommentId(null)}
-                className="ml-2 bg-red-500 text-white px-2 py-1 rounded text-xs sm:text-sm"
-              >
-                Cancel
-              </button>
-            </>
-          ) : (
-            <>
-              <span className="text-xs sm:text-sm">{comment.comment}</span>
-              <button
-                onClick={() => { setEditingCommentId(comment.id); setEditedComment(comment.comment); }}
-                className="ml-2 text-blue-500 hover:underline text-xs sm:text-sm"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => handleDeleteComment(comment.id)}
-                className="ml-2 text-red-500 hover:underline text-xs sm:text-sm"
-              >
-                Delete
-              </button>
-              <button
-                onClick={() => setReplyToCommentId(comment.id)}
-                className="ml-2 text-green-500 hover:underline text-xs sm:text-sm"
-              >
-                Reply
-              </button>
-            </>
-          )}
-        </div>
-        {/* Reply input directly below the comment being replied to */}
-        {replyToCommentId === comment.id && (
-          <div className="flex items-center mt-2 ml-4">
-            <input
-              type="text"
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              placeholder="Write a reply..."
-              className="flex-grow p-2 border rounded text-xs sm:text-sm"
-            />
+      <div key={comment.id} className={`mb-3 flex items-start justify-between ${isReply ? "ml-10" : ""}`}>
+        <div className="flex min-w-0 items-start">
+          <img
+            src={getImageUrl(comment.profile?.profile_picture)}
+            alt={comment.profile?.username}
+            className="mr-2 h-7 w-7 shrink-0 rounded-full object-cover"
+          />
+          <div className="min-w-0">
+            <div className="rounded-2xl bg-wb-canvas px-3 py-2">
+              <p className="text-sm font-semibold">{comment.profile?.username}</p>
+              {editingCommentId === comment.id ? (
+                <input
+                  type="text"
+                  value={editedComment}
+                  onChange={(e) => setEditedComment(e.target.value)}
+                  className="wb-input mt-1"
+                />
+              ) : (
+                <p className="text-sm text-wb-ink">{comment.comment}</p>
+              )}
+            </div>
             <button
-              onClick={() => handleReplySubmit(postId, comment.id)}
-              className="ml-2 bg-green-500 text-white px-2 py-1 rounded text-xs sm:text-sm"
+              onClick={() => setReplyToCommentId(comment.id)}
+              className="mt-1 text-xs font-semibold text-wb-muted hover:text-wb-blue"
             >
               Reply
             </button>
+            {replyToCommentId === comment.id && (
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="text"
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  placeholder="Write a reply..."
+                  className="wb-input"
+                />
+                <button
+                  onClick={() => handleReplySubmit(postId, comment.id)}
+                  className="wb-btn-primary"
+                >
+                  Reply
+                </button>
+              </div>
+            )}
+            {!isReply && comment.replies && comment.replies.length > 0 && (
+              <div className="mt-2">
+                {renderComments(comment.replies, postId, true)}
+              </div>
+            )}
           </div>
-        )}
-        {/* Render replies nested under the parent comment */}
-        {comment.replies && comment.replies.length > 0 && (
-          <div className="ml-8 mt-2">
-            {renderComments(comment.replies, postId)}
+        </div>
+        {editingCommentId === comment.id ? (
+          <div className="ml-2 flex shrink-0 gap-2">
+            <button onClick={() => handleEditComment(comment.id)} className="text-xs font-bold text-wb-blue">
+              Save
+            </button>
+            <button
+              onClick={() => { setEditingCommentId(null); setEditedComment(""); }}
+              className="text-xs font-bold text-wb-muted"
+            >
+              Cancel
+            </button>
           </div>
-        )}
+        ) : isOwnedBy(comment.profile?.user?.id, user?.id) ? (
+          <OptionsMenu
+            onEdit={() => { setEditingCommentId(comment.id); setEditedComment(comment.comment); }}
+            onDelete={() => handleDeleteComment(comment.id)}
+          />
+        ) : null}
       </div>
     ));
 
@@ -357,12 +395,14 @@ export const WelcomePage = () => {
 
   return (
     <MainLayout>
-      <div className="">
-        <div className="flex-1 flex flex-col items-stretch w-full h-full">
-          <div className="bg-white p-2 sm:p-4 md:p-8 rounded-lg shadow-lg mt-4 w-full flex-1 h-full relative">
+      {modal}
+      {process && <ProcessProgressBox label={process.label} percent={process.percent} />}
+      <div className="wb-page !px-0 !py-0">
+        <div className="mx-auto w-full max-w-4xl">
+          <div className="relative bg-white shadow-card md:overflow-hidden md:rounded-b-xl">
             {/* Settings Icon */}
             <button
-              className="absolute top-4 right-4 sm:top-6 sm:right-6 focus:outline-none"
+              className="absolute right-4 top-4 z-10 rounded-full bg-white/90 p-2 text-wb-ink shadow-card hover:bg-white"
               onClick={() => setShowSettings(true)}
               aria-label="Open settings"
             >
@@ -371,121 +411,175 @@ export const WelcomePage = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </button>
-            <h1 className="text-2xl sm:text-3xl text-center mb-6 text-gray-800 dark:text-gray-100">Demo of utsav's project!</h1>
             {profile && (
-              <div className="space-y-10">
-                {/* Profile Header Row */}
-                <div className="w-full relative h-48 sm:h-64 md:h-72 bg-gray-300">
-                  <img
-                    src={profile.cover_photo ? getImageUrl(profile.cover_photo) : '/default-cover.jpg'}
-                    alt="Cover"
-                    className="w-full h-full object-cover object-center cursor-pointer"
-                    onClick={() => setShowPicOptions('cover')}
-                  />
-                  {/* Profile picture overlapping cover photo */}
-                  <div className="absolute left-8 bottom-[-48px] sm:bottom-[-64px] md:bottom-[-72px]">
-                    <img
-                      src={profile.profile_picture ? getImageUrl(profile.profile_picture) : '/default-avatar.png'}
-                      alt="Profile"
-                      className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-full object-cover border-4 border-white shadow-lg bg-gray-200 cursor-pointer"
-                      onClick={() => setShowPicOptions('profile')}
-                    />
+              <div>
+                <div className="relative h-48 w-full bg-gray-300 sm:h-64 md:h-72">
+                  <button
+                    type="button"
+                    className="h-full w-full"
+                    onClick={() => openPhoto("cover")}
+                    aria-label="View cover photo"
+                  >
+                    {getCoverUrl(profile.cover_photo) && (
+                      <img
+                        src={getCoverUrl(profile.cover_photo)!}
+                        alt="Cover"
+                        className="h-full w-full object-cover object-center"
+                      />
+                    )}
+                  </button>
+                  <div className="absolute bottom-3 right-3">
+                    <button
+                      type="button"
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-wb-ink shadow-card hover:bg-wb-canvas"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowPicOptions((current) => (current === "cover" ? null : "cover"));
+                      }}
+                      aria-label="Edit cover photo"
+                    >
+                      <Camera size={18} />
+                    </button>
+                    {showPicOptions === "cover" && (
+                      <div className="absolute right-0 top-11 z-30 w-48 overflow-hidden rounded-xl border border-wb-line bg-white shadow-card">
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold hover:bg-wb-canvas"
+                          onClick={() => startUpload("cover")}
+                        >
+                          <ImagePlus size={16} /> Upload photo
+                        </button>
+                        {getCoverUrl(profile.cover_photo) && (
+                          <button
+                            type="button"
+                            className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-red-500 hover:bg-wb-canvas"
+                            onClick={() => handleRemove("cover")}
+                          >
+                            <Trash2 size={16} /> Remove
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="absolute bottom-[-48px] left-6 sm:bottom-[-64px] sm:left-8">
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openPhoto("profile");
+                        }}
+                        aria-label="View profile picture"
+                      >
+                        <img
+                          src={getImageUrl(profile.profile_picture)}
+                          alt="Profile"
+                          className={`h-24 w-24 rounded-full border-4 border-white bg-gray-200 shadow-lg sm:h-32 sm:w-32 md:h-36 md:w-36 ${profile.profile_picture ? "object-cover" : "object-contain p-5 sm:p-7"}`}
+                        />
+                      </button>
+                      <button
+                        type="button"
+                        className="absolute bottom-1 right-1 flex h-8 w-8 items-center justify-center rounded-full border border-wb-line bg-white text-wb-ink shadow-card hover:bg-wb-canvas sm:h-9 sm:w-9"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowPicOptions((current) => (current === "profile" ? null : "profile"));
+                        }}
+                        aria-label="Edit profile picture"
+                      >
+                        <Camera size={16} />
+                      </button>
+                      {showPicOptions === "profile" && (
+                        <div className="absolute left-0 top-full z-30 mt-2 w-48 overflow-hidden rounded-xl border border-wb-line bg-white shadow-card">
+                          <button
+                            type="button"
+                            className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold hover:bg-wb-canvas"
+                            onClick={() => startUpload("profile")}
+                          >
+                            <ImagePlus size={16} /> Upload photo
+                          </button>
+                          {profile.profile_picture && (
+                            <button
+                              type="button"
+                              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-red-500 hover:bg-wb-canvas"
+                              onClick={() => handleRemove("profile")}
+                            >
+                              <Trash2 size={16} /> Remove
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-                {/* Username and Bio */}
-                <div className="flex flex-col sm:flex-row justify-between w-full max-w-4xl mt-16 px-4 gap-4">
-                  <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mt-8">{profile.username}</div>
-                  <div className="text-base text-gray-700 dark:text-gray-300 mt-1">{profile.bio}</div>
+                <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleUpload} />
+                <div className="mt-16 px-4 pb-2 sm:px-8">
+                  <h1 className="text-2xl font-bold">{profile.username}</h1>
+                  {profile.bio && <p className="mt-1 text-sm text-wb-muted">{profile.bio}</p>}
                 </div>
-                {/* Tabs Row */}
-                <div className="flex flex-wrap sm:flex-nowrap justify-center gap-2 sm:gap-8 border-b pb-2 mb-4 mt-16 w-full overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300">
-                  <button className={`px-2 sm:px-4 py-1 sm:py-2 text-sm sm:text-base font-semibold whitespace-nowrap ${activeTab === 'posts' ? 'border-b-2 border-blue-500 text-blue-500 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`} onClick={() => setActiveTab('posts')}>Posts</button>
-                  <button className={`px-2 sm:px-4 py-1 sm:py-2 text-sm sm:text-base font-semibold whitespace-nowrap ${activeTab === 'followers' ? 'border-b-2 border-blue-500 text-blue-500 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`} onClick={() => { setActiveTab('followers'); fetchFollowersList(); }}>Followers</button>
-                  <button className={`px-2 sm:px-4 py-1 sm:py-2 text-sm sm:text-base font-semibold whitespace-nowrap ${activeTab === 'following' ? 'border-b-2 border-blue-500 text-blue-500 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`} onClick={() => { setActiveTab('following'); fetchFollowingList(); }}>Following </button>
-                  <button className={`px-2 sm:px-4 py-1 sm:py-2 text-sm sm:text-base font-semibold whitespace-nowrap ${activeTab === 'friends' ? 'border-b-2 border-blue-500 text-blue-500 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`} onClick={() => { setActiveTab('friends'); fetchFriendsList(); }}>Friends </button>
+                <div className="mt-4 flex gap-1 overflow-x-auto border-b border-wb-line px-2 sm:px-8">
+                  <button className={`px-4 py-3 text-sm font-semibold ${activeTab === 'posts' ? 'border-b-2 border-wb-blue text-wb-blue' : 'text-wb-muted'}`} onClick={() => setActiveTab('posts')}>Posts</button>
+                  <button className={`px-4 py-3 text-sm font-semibold ${activeTab === 'followers' ? 'border-b-2 border-wb-blue text-wb-blue' : 'text-wb-muted'}`} onClick={() => { setActiveTab('followers'); fetchFollowersList(); }}>Followers</button>
+                  <button className={`px-4 py-3 text-sm font-semibold ${activeTab === 'following' ? 'border-b-2 border-wb-blue text-wb-blue' : 'text-wb-muted'}`} onClick={() => { setActiveTab('following'); fetchFollowingList(); }}>Following</button>
+                  <button className={`px-4 py-3 text-sm font-semibold ${activeTab === 'friends' ? 'border-b-2 border-wb-blue text-wb-blue' : 'text-wb-muted'}`} onClick={() => { setActiveTab('friends'); fetchFriendsList(); }}>Friends</button>
                 </div>
                 {activeTab === 'posts' && (
-                  <div className="mt-2">
+                  <div className="p-4 sm:p-6">
                     {userPosts.length === 0 ? (
-                      <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 sm:p-8 text-center text-gray-500 dark:text-gray-300">No posts yet.</div>
+                      <div className="wb-empty">No posts yet.</div>
                     ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-4">
                         {userPosts.map((post) => (
-                          <div key={post.id} className="bg-gray-200 rounded-lg p-4 sm:p-6 flex flex-col gap-4 cursor-pointer hover:bg-gray-300 transition">
-                            <div className="flex items-center mb-2 gap-2">
+                          <div key={post.id} className="wb-card overflow-hidden">
+                            <div className="flex items-center gap-2 px-4 py-3">
                               <img
-                                src={`${BACKEND_BASE_URL}${post.profile.profile_picture}`}
+                                src={getImageUrl(post.profile.profile_picture)}
                                 alt={post.profile.username}
-                                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
+                                className="h-10 w-10 rounded-full object-cover"
                               />
-                              <span className="font-bold text-sm sm:text-base">{post.profile.username}</span>
-                              {user && post.profile?.user?.id === user.id && (
-                                <div className="ml-auto relative">
-                                  <button
-                                    onClick={() => toggleDropdown(post.id)}
-                                    className="text-gray-500 hover:text-gray-700"
-                                  >
-                                    ⋮
-                                  </button>
-                                  {openDropdownPostId === post.id && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg">
-                                      <button
-                                        onClick={() => {
-                                          setEditingPost(post);
-                                          setOpenDropdownPostId(null);
-                                        }}
-                                        className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                                      >
-                                        Edit
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          handleDeletePost(post.id);
-                                          setOpenDropdownPostId(null);
-                                        }}
-                                        className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500"
-                                      >
-                                        Delete
-                                      </button>
-                                    </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm">
+                                  <span className="font-semibold">{post.profile.username}</span>
+                                  {postStoryLine(post) && (
+                                    <span className="font-normal"> {postStoryLine(post)}</span>
                                   )}
-                                </div>
+                                </p>
+                                <p className="text-xs text-wb-muted">{visibilityLabel(post.visibility)}</p>
+                              </div>
+                              {isOwnedBy(post.profile?.user?.id, user?.id) && (
+                                <OptionsMenu
+                                  onEdit={() => setEditingPost(post)}
+                                  onDelete={() => handleDeletePost(post.id)}
+                                />
                               )}
                             </div>
-                            {post.content && <p className="mb-2 text-xs sm:text-sm md:text-base text-gray-800 dark:text-gray-100">{post.content}</p>}
-                            {post.image && (
-                              <img
-                                src={`${BACKEND_BASE_URL}${post.image}`}
-                                alt="Post"
-                                className="w-full h-32 sm:h-40 md:h-48 object-cover rounded mb-2"
+                            {post.content && <p className="px-4 pb-3 text-[15px]">{post.content}</p>}
+                            <PostStoryMedia post={post} />
+                            <div className="flex border-t border-wb-line px-2 py-1">
+                              <LikeButton
+                                liked={post.is_liked}
+                                count={post.likes || 0}
+                                onClick={(e) => { e.stopPropagation(); likepost(post.id); }}
                               />
-                            )}
-                            <div className="flex space-x-4 mt-2 text-xs sm:text-sm">
-                              <button onClick={e => { e.stopPropagation(); likepost(post.id); }} className="flex items-center">
-                                <span>👍</span>
-                                <span>{post.likes}</span>
-                              </button>
                               <button
                                 onClick={e => { e.stopPropagation(); handleOpenComments(post.id); }}
-                                className="flex items-center"
+                                className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold text-wb-muted hover:bg-wb-canvas"
                               >
-                                <span>💬</span>
-                                <span>{post.comments.length} comments</span>
+                                Comment {post.comments?.length || 0}
                               </button>
                             </div>
                             {openCommentSectionId === post.id && (
-                              <div className="mt-4">
-                                <div className="flex items-center mb-4 gap-2">
+                              <div className="border-t border-wb-line px-4 py-3">
+                                <div className="mb-3 flex items-center gap-2">
                                   <input
                                     type="text"
                                     value={newComment}
                                     onChange={(e) => setNewComment(e.target.value)}
                                     placeholder="Write a comment..."
-                                    className="flex-grow p-2 border rounded text-xs sm:text-sm"
+                                    className="wb-input"
                                   />
                                   <button
                                     onClick={() => handleCommentSubmit(post.id)}
-                                    className="ml-2 bg-blue-500 text-white px-2 py-1 rounded text-xs sm:text-sm"
+                                    className="wb-btn-primary"
                                   >
                                     Post
                                   </button>
@@ -501,7 +595,7 @@ export const WelcomePage = () => {
                   </div>
                 )}
                 {activeTab === 'followers' && (
-                  <div className="mt-2">
+                  <div className="p-4 sm:p-6">
                     {loadingFollowers ? <Spinner /> : (
                       <ul className="space-y-4">
                         {followersList.filter(f => f.id !== profile?.id).length === 0 ? <li>No followers yet.</li> : followersList.filter(f => f.id !== profile?.id).map(f => (
@@ -512,7 +606,7 @@ export const WelcomePage = () => {
                   </div>
                 )}
                 {activeTab === 'following' && (
-                  <div className="mt-2">
+                  <div className="p-4 sm:p-6">
                     {loadingFollowing ? <Spinner /> : (
                       <ul className="space-y-4">
                         {followingList.filter(f => f.id !== profile?.id).length === 0 ? <li>Not following anyone yet.</li> : followingList.filter(f => f.id !== profile?.id).map(f => (
@@ -523,7 +617,7 @@ export const WelcomePage = () => {
                   </div>
                 )}
                 {activeTab === 'friends' && (
-                  <div className="mt-2">
+                  <div className="p-4 sm:p-6">
                     {loadingFriends ? <Spinner /> : (
                       <ul className="space-y-4">
                         {friendsList.filter(f => f.id !== profile?.id).length === 0 ? <li>No friends yet.</li> : friendsList.filter(f => f.id !== profile?.id).map(f => (
@@ -549,9 +643,9 @@ export const WelcomePage = () => {
                       <h2 className="text-xl sm:text-2xl font-bold mb-4 text-center">Account Center</h2>
                       <div className="mb-4 flex flex-col items-center">
                         <img
-                          src={`${BACKEND_BASE_URL}${profile?.profile_picture}`}
+                          src={getImageUrl(profile?.profile_picture)}
                           alt="Profile"
-                          className="w-24 h-24 rounded-full object-cover border mb-2"
+                          className="mb-2 h-24 w-24 rounded-full border bg-gray-200 object-cover"
                         />
                         <div className="flex gap-2">
                           <button onClick={() => setShowProfilePicModal(true)} className="text-xs underline flex items-center gap-1">
@@ -683,9 +777,9 @@ export const WelcomePage = () => {
                         </div>
                       </div>
                       <div className="flex flex-col gap-3">
-                        <button onClick={handleDeleteAccount} className="border rounded px-4 py-2">Delete Account</button>
-                        <button onClick={logout} className="border rounded px-4 py-2">Logout</button>
-                        <button onClick={() => { setShowPasswordModal(true); setShowSettings(false); }} className="border rounded px-4 py-2">Change Password</button>
+                        <button onClick={() => { setShowPasswordModal(true); setShowSettings(false); }} className="wb-btn-primary">Change password</button>
+                        <button onClick={logout} className="wb-btn-secondary">Logout</button>
+                        <button onClick={handleDeleteAccount} className="wb-btn-danger">Delete account</button>
                       </div>
                     </div>
                   </div>
@@ -708,32 +802,32 @@ export const WelcomePage = () => {
                         placeholder="Old Password"
                         value={oldPassword}
                         onChange={(e) => setOldPassword(e.target.value)}
-                        className="w-full p-2 border rounded mb-2 text-xs sm:text-sm"
+                        className="wb-input mb-2"
                       />
                       <input
                         type="password"
                         placeholder="New Password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full p-2 border rounded mb-2 text-xs sm:text-sm"
+                        className="wb-input mb-2"
                       />
                       <input
                         type="password"
                         placeholder="Confirm New Password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full p-2 border rounded mb-2 text-xs sm:text-sm"
+                        className="wb-input mb-2"
                       />
                       <div className="flex space-x-4 mt-2">
                         <button
                           onClick={handleChangePassword}
-                          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 text-xs sm:text-sm"
+                          className="wb-btn-primary"
                         >
                           Save
                         </button>
                         <button
                           onClick={() => setShowPasswordModal(false)}
-                          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-xs sm:text-sm"
+                          className="wb-btn-secondary"
                         >
                           Cancel
                         </button>
@@ -752,7 +846,7 @@ export const WelcomePage = () => {
                         </svg>
                       </button>
                       <img
-                        src={profile?.profile_picture ? getImageUrl(profile.profile_picture) : "/default-avatar.png"}
+                        src={getImageUrl(profile?.profile_picture)}
                         alt="Profile Zoom"
                         className="w-40 h-40 sm:w-60 sm:h-60 md:w-80 md:h-80 rounded-full object-cover border"
                       />
@@ -762,32 +856,42 @@ export const WelcomePage = () => {
                 {selectedPost && (
                   <FullScreenPostModal post={selectedPost} onClose={() => setSelectedPost(null)} />
                 )}
-                {/* Picture Options Modal */}
-                {showPicOptions && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-xs flex flex-col items-center relative">
-                      <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700" onClick={() => setShowPicOptions(null)} aria-label="Close options">✕</button>
-                      <h3 className="text-lg font-semibold mb-4">{showPicOptions === 'profile' ? 'Profile Picture' : 'Cover Photo'} Options</h3>
-                      <button className="w-full py-2 mb-2 rounded bg-blue-100 hover:bg-blue-200" onClick={handleView}>View</button>
-                      <button className="w-full py-2 mb-2 rounded bg-red-100 hover:bg-red-200" onClick={handleRemove}>Remove</button>
-                      <button className="w-full py-2 rounded bg-green-100 hover:bg-green-200" onClick={() => fileInputRef.current?.click()}>Upload</button>
-                      <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleUpload} />
-                    </div>
-                  </div>
+                {editingPost && (
+                  <EditPostModal post={editingPost} onClose={() => setEditingPost(null)} />
                 )}
-                {/* View Picture Modal */}
+                {showPicOptions && (
+                  <button
+                    type="button"
+                    className="fixed inset-0 z-20 cursor-default"
+                    aria-label="Close photo menu"
+                    onClick={() => setShowPicOptions(null)}
+                  />
+                )}
                 {viewPicModal && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70" onClick={() => setViewPicModal(null)}>
-                    <div className="bg-white rounded-lg shadow-lg p-2 sm:p-4 max-w-lg w-full flex flex-col items-center relative" onClick={e => e.stopPropagation()}>
-                      <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700" onClick={() => setViewPicModal(null)} aria-label="Close view">✕</button>
+                  <div
+                    className="fixed inset-0 z-[80] flex items-center justify-center bg-black/90 p-4"
+                    onClick={() => setViewPicModal(null)}
+                  >
+                    <button
+                      type="button"
+                      className="absolute right-4 top-4 rounded-full bg-white/15 p-2 text-white hover:bg-white/25"
+                      onClick={() => setViewPicModal(null)}
+                      aria-label="Close"
+                    >
+                      <X size={22} />
+                    </button>
+                    {viewPicModal === "cover" && !getCoverUrl(profile.cover_photo) ? (
+                      <div className="h-64 w-full max-w-3xl rounded-lg bg-gray-300" />
+                    ) : (
                       <img
-                        src={viewPicModal === 'profile'
-                          ? (profile.profile_picture ? getImageUrl(profile.profile_picture) : '/default-avatar.png')
-                          : (profile.cover_photo ? getImageUrl(profile.cover_photo) : '/default-cover.jpg')}
-                        alt={viewPicModal === 'profile' ? 'Profile' : 'Cover'}
-                        className={viewPicModal === 'profile' ? 'w-60 h-60 rounded-full object-cover' : 'w-full max-h-96 object-cover'}
+                        src={viewPicModal === "profile"
+                          ? getImageUrl(profile.profile_picture)
+                          : getCoverUrl(profile.cover_photo)!}
+                        alt={viewPicModal === "profile" ? "Profile" : "Cover"}
+                        className="max-h-[85vh] max-w-full object-contain"
+                        onClick={(e) => e.stopPropagation()}
                       />
-                    </div>
+                    )}
                   </div>
                 )}
               </div>

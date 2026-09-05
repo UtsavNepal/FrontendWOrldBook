@@ -108,6 +108,15 @@ export const LoginPage = () => {
               </form>
 
               <p className="mt-4 text-center text-sm text-gray-600 m-0">
+                <button
+                  type="button"
+                  onClick={() => setIsResetModalOpen(true)}
+                  className="text-blue-500 hover:text-blue-600 m-0"
+                >
+                  Forgot password?
+                </button>
+              </p>
+              <p className="mt-4 text-center text-sm text-gray-600 m-0">
                 Don't have an account?{" "}
                 <button
                   onClick={() => navigate("/signup")}

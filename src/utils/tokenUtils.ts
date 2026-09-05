@@ -1,4 +1,5 @@
 import { axiosInstance } from "./axiosinstance";
+import { api } from "../config/api";
 
 // Constants for token storage keys
 export const ACCESS_TOKEN_KEY = "access_token";
@@ -58,8 +59,8 @@ export const refreshAccessToken = async (): Promise<string | null> => {
   }
 
   try {
-    const response = await axiosInstance.post<{ accessToken: string }>("/auth/refresh", { refreshToken });
-    const newAccessToken = response.data.accessToken;
+    const response = await axiosInstance.post<{ accessToken: string; access?: string }>(api.auth.refresh(), { refreshToken });
+    const newAccessToken = response.data.accessToken || response.data.access || "";
     saveTokens(newAccessToken, refreshToken);
     return newAccessToken;
   } catch (error) {

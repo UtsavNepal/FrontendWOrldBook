@@ -6,6 +6,7 @@ import FriendActionButtons from "../../components/FriendActionButtons";
 import { friendRepository } from '../../../infrastructure/repositories/FriendRepository';
 import { SpinnerOverlay } from "../../ui/Spinner";
 import MainLayout from "../../components/MainLayout";
+import PageShell from "../../components/PageShell";
 import { getImageUrl } from '../../../utils/getImageUrl';
 
 const FriendPage: React.FC = () => {
@@ -15,7 +16,10 @@ const FriendPage: React.FC = () => {
     acceptFriendRequest,
     rejectFriendRequest,
     getFriendRequests,
+    getSentFriendRequests,
     fetchOtherUsersProfiles,
+    sendFriendRequest,
+    cancelFriendRequest,
   } = useFriendContext();
   const { user } = useAuth();
 
@@ -39,6 +43,7 @@ const FriendPage: React.FC = () => {
             setFriends(friendsData);
             const received = await friendRepository.listFriendRequests();
             setReceivedRequests(received);
+            await getSentFriendRequests();
             const sent = await friendRepository.listSentFriendRequests();
             setSentRequests(sent);
             setFriendsLoading(false);
@@ -64,40 +69,44 @@ const FriendPage: React.FC = () => {
     : [];
 
   const refreshData = async () => {
-    setFriendsLoading(true);
     if (user) {
       const friendsData = await friendRepository.getFriends();
       setFriends(friendsData);
       const received = await friendRepository.listFriendRequests();
       setReceivedRequests(received);
+      await getSentFriendRequests();
       const sent = await friendRepository.listSentFriendRequests();
       setSentRequests(sent);
-      setFriendsLoading(false);
     }
   };
 
-  const handleSendFriendRequest = async (userId: number) => {
-      try {
-        await friendRepository.sendFriendRequest(String(userId));
-        await refreshData();
-      } catch (err: any) {
-        if (err?.response?.data?.error?.toLowerCase().includes('already sent')) {
-          await refreshData();
-        }
+  const handleSendFriendRequest = async (userId: string) => {
+    try {
+      const created = await sendFriendRequest(userId);
+      if (created) {
+        setSentRequests((requests) =>
+          requests.some((request) => String(request.id) === String(created.id))
+            ? requests
+            : [...requests, created]
+        );
       }
-    };
-
-  const handleCancelFriendRequest = async (requestId: number) => {
-    if (requestId) {
-      await friendRepository.cancelFriendRequest(requestId);
-      await refreshData();
+    } catch (err: any) {
+      if (err?.response?.data?.error?.toLowerCase().includes("already sent")) {
+        await refreshData();
+      }
     }
   };
-  const handleAcceptFriendRequest = async (requestId: number) => {
+
+  const handleCancelFriendRequest = async (requestId: string) => {
+    if (!requestId) return;
+    setSentRequests((requests) => requests.filter((request) => String(request.id) !== String(requestId)));
+    await cancelFriendRequest(requestId);
+  };
+  const handleAcceptFriendRequest = async (requestId: string) => {
     await acceptFriendRequest(requestId);
     await refreshData();
   };
-  const handleRejectFriendRequest = async (requestId: number) => {
+  const handleRejectFriendRequest = async (requestId: string) => {
     await rejectFriendRequest(requestId);
     await refreshData();
   };
@@ -105,133 +114,116 @@ const FriendPage: React.FC = () => {
     await refreshData();
   };
 
-  if (isLoading || friendsLoading) {
+  if (isLoading) {
     return <SpinnerOverlay />;
   }
 
+  const suggestions = otherUsers.filter((otherUser) => {
+    if (!user || otherUser.user.id === user.id) return false;
+    return !friends.some(friend => String(friend.user?.id) === String(otherUser.user.id));
+  });
+
   return (
     <MainLayout>
-      <div className="min-h-screen flex justify-center items-start bg-gray-100 dark:bg-gray-900 pl-0 sm:pl-0 md:pl-0 py-8">
-        <div className="w-full max-w-2xl px-2 sm:px-4 md:px-6 lg:px-8 flex-1 h-full">
-          {fetchError && <div className="text-red-500 mb-4">{fetchError}</div>}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-6 text-center text-gray-800 dark:text-gray-100">Your Friends</h1>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {uniqueFriends.length === 0 && (
-                <div className="col-span-full text-center text-gray-500 bg-white rounded-lg shadow p-6">No friends yet.</div>
-              )}
+      <PageShell title="Friends" wide>
+        {fetchError && <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{fetchError}</div>}
+
+        <section className="mb-8">
+          <h2 className="mb-3 text-lg font-bold">Friend requests</h2>
+          {friendRequests.length === 0 ? (
+            <div className="wb-empty">No pending requests.</div>
+          ) : (
+            <div className="space-y-3">
+              {friendRequests.map((request) => (
+                <div key={request.id} className="wb-card flex flex-col items-start justify-between gap-3 p-4 sm:flex-row sm:items-center">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={getImageUrl(request.from_user.profile_picture)}
+                      alt={request.from_user.username}
+                      className="h-12 w-12 rounded-full object-cover"
+                    />
+                    <div>
+                      <p className="font-semibold">{request.from_user.username}</p>
+                      <p className="text-xs text-wb-muted">sent you a friend request</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button onClick={() => acceptFriendRequest(request.id)} className="wb-btn-primary">
+                      Confirm
+                    </button>
+                    <button onClick={() => rejectFriendRequest(request.id)} className="wb-btn-secondary">
+                      Delete
+                    </button>
+                    <Link to={`/profile/${request.from_user.id}`} className="wb-btn-secondary">
+                      View
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="mb-8">
+          <h2 className="mb-3 text-lg font-bold">Your friends</h2>
+          {uniqueFriends.length === 0 ? (
+            <div className="wb-empty">You haven't added any friends yet.</div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {uniqueFriends.map((friend, idx) => (
-                <div key={`${friend.id}_${idx}`} className="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                <div key={`${friend.id}_${idx}`} className="wb-card flex items-center gap-3 p-4">
                   <img
                     src={getImageUrl(friend.profile_picture)}
                     alt={friend.username}
-                    className="w-16 h-16 rounded-full mb-2 border-2 border-gray-200 object-cover"
+                    className="h-14 w-14 rounded-full object-cover"
                   />
-                  <span className="font-semibold text-base text-gray-700 mb-1">{friend.username}</span>
-                  <Link
-                    to={`/profile/${friend.id}`}
-                    className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-xs mt-2"
-                  >
-                    View Profile
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold">{friend.username}</p>
+                    <Link to={`/profile/${friend.id}`} className="text-xs font-semibold text-wb-blue">
+                      View profile
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section>
+          <h2 className="mb-3 text-lg font-bold">People you may know</h2>
+          {suggestions.length === 0 ? (
+            <div className="wb-empty">No suggestions right now.</div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {suggestions.map((otherUser) => (
+                <div key={otherUser.username} className="wb-card flex flex-col items-center p-5 text-center">
+                  <img
+                    src={getImageUrl(otherUser.profile_picture)}
+                    alt={otherUser.username}
+                    className="mb-3 h-16 w-16 rounded-full object-cover"
+                  />
+                  <p className="mb-3 font-semibold">{otherUser.username}</p>
+                  <FriendActionButtons
+                    targetUser={{ ...otherUser, id: String(otherUser.user.id) }}
+                    currentUser={user}
+                    isFriend={friends.some(friend => String(friend.user?.id) === String(otherUser.user.id))}
+                    receivedRequests={receivedRequests}
+                    sentRequests={sentRequests}
+                    onSend={handleSendFriendRequest}
+                    onCancel={handleCancelFriendRequest}
+                    onAccept={handleAcceptFriendRequest}
+                    onReject={handleRejectFriendRequest}
+                    onUnfriend={handleUnfriend}
+                  />
+                  <Link to={`/profile/${otherUser.id}`} className="mt-2 text-xs font-semibold text-wb-blue">
+                    View profile
                   </Link>
                 </div>
               ))}
             </div>
-          </div>
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Friend Requests</h1>
-            <div className="grid grid-cols-1 gap-4">
-              {friendRequests.length === 0 && (
-                <div className="text-center text-gray-500 bg-white rounded-lg shadow p-6">No friend requests.</div>
-              )}
-              {friendRequests.map((request) => (
-                <div key={request.id} className="bg-white rounded-lg shadow p-4 flex flex-col sm:flex-row items-center justify-between">
-                  <div className="flex items-center gap-3 mb-2 sm:mb-0">
-                    <img
-                      src={getImageUrl(request.from_user.profile_picture)}
-                      alt={request.from_user.username}
-                      className="w-12 h-12 rounded-full border-2 border-gray-200 object-cover"
-                    />
-                    <div>
-                      <span className="font-semibold text-base text-gray-700">{request.from_user.username}</span>
-                      <span className="block text-gray-500 text-xs">sent you a friend request</span>
-                    </div>
-                    <Link
-                      to={`/profile/${request.from_user.id}`}
-                      className="bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded text-xs ml-2"
-                    >
-                      View Profile
-                    </Link>
-                  </div>
-                  <div className="flex gap-2 mt-2 sm:mt-0">
-                    <button
-                      onClick={() => acceptFriendRequest(request.id)}
-                      className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs"
-                    >
-                      Accept
-                    </button>
-                    <button
-                      onClick={() => rejectFriendRequest(request.id)}
-                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
-                    >
-                      Reject
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">People You Might Know</h1>
-            {!friendsLoading && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {otherUsers
-                  .filter((otherUser) => {
-                    if (!user || otherUser.user.id === user.id) return false;
-                    return !friends.some(friend => String(friend.user?.id) === String(otherUser.user.id));
-                  })
-                  .map((otherUser) => (
-                    <div key={otherUser.username} className="bg-white rounded-lg shadow p-4 flex flex-col items-center">
-                      <img
-                        src={getImageUrl(otherUser.profile_picture)}
-                        alt={otherUser.username}
-                        className="w-16 h-16 rounded-full mb-2 border-2 border-gray-200 object-cover"
-                      />
-                      <span className="font-semibold text-base text-gray-700 mb-1">{otherUser.username}</span>
-                      <div className="flex flex-col sm:flex-row items-center gap-2 mt-2">
-                        <FriendActionButtons
-                          targetUser={{ ...otherUser, id: Number(otherUser.user.id) }}
-                          currentUser={user}
-                          isFriend={friends.some(friend => String(friend.user?.id) === String(otherUser.user.id))}
-                          receivedRequests={receivedRequests}
-                          sentRequests={sentRequests}
-                          onSend={handleSendFriendRequest}
-                          onCancel={handleCancelFriendRequest}
-                          onAccept={handleAcceptFriendRequest}
-                          onReject={handleRejectFriendRequest}
-                          onUnfriend={handleUnfriend}
-                        />
-                        <Link
-                          to={`/profile/${otherUser.id}`}
-                          className="bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded text-xs"
-                        >
-                          View Profile
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                {otherUsers.filter((otherUser) => {
-                  if (!user || otherUser.user.id === user.id) return false;
-                  return !friends.some(friend => String(friend.user?.id) === String(otherUser.user.id));
-                }).length === 0 && (
-                  <div className="col-span-full text-center text-gray-500 bg-white rounded-lg shadow p-6">No suggestions at the moment.</div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-        {(isLoading || friendsLoading) && <SpinnerOverlay />}
-      </div>
+          )}
+        </section>
+      </PageShell>
     </MainLayout>
   );
 };

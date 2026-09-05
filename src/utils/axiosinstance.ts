@@ -1,13 +1,13 @@
 import axios, { AxiosResponse, AxiosError, InternalAxiosRequestConfig } from "axios";
 import { clearTokens, getAccessToken, refreshAccessToken } from "./tokenUtils";
+import { backendUrl } from "../config/api";
 
 export const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL,
-  withCredentials: true,  // Enable sending cookies for CSRF
+  baseURL: backendUrl,
+  withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  }
+    Accept: "application/json",
+  },
 });
 
 axiosInstance.interceptors.request.use(
@@ -16,6 +16,11 @@ axiosInstance.interceptors.request.use(
     if (accessToken) {
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
+    } else if (!config.headers["Content-Type"]) {
+      config.headers["Content-Type"] = "application/json";
     }
     return config;
   },

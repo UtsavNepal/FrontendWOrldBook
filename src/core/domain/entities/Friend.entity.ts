@@ -1,5 +1,5 @@
 export interface User {
-  id: number;
+  id: string;
   firstname: string;
   lastname: string;
   joined_at: string;
@@ -9,7 +9,7 @@ export interface User {
 }
 
 export interface Profile {
-  id: number;
+  id: string;
   profile_picture: string;
   username: string;
   bio: string | null;
@@ -21,7 +21,7 @@ export interface Profile {
 }
 
 export interface FriendRequest {
-  id: number;
+  id: string;
   from_user: Profile;
   to_user: Profile;
   status: 'pending' | 'accepted' | 'rejected';

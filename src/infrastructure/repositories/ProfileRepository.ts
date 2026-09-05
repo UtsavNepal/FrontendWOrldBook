@@ -1,10 +1,11 @@
-// ProfileRepository.ts
 import { BaseRepository } from "../base/BaseRepository";
 import { Profile } from "../../core/domain/entities/Profile.entity";
+import { api } from "../../config/api";
 
 export interface ProfileResponse {
-  id: number;
+  id: string;
   profile_picture: string;
+  cover_photo?: string;
   username: string;
   bio: string;
   total_posts: number;
@@ -12,8 +13,9 @@ export interface ProfileResponse {
   posts: any[];
   tagged_posts: any[];
   reactions: any[];
+  post_photos?: any[];
   user: {
-    id:string;
+    id: string;
     email: string;
     gender: string;
     joined_at: string;
@@ -21,252 +23,133 @@ export interface ProfileResponse {
   };
 }
 
+function toProfile(response: ProfileResponse): Profile {
+  return {
+    ...response,
+    id: String(response.id),
+    post_photos: response.post_photos ?? [],
+    user: {
+      id: String(response.user.id),
+      email: response.user.email,
+      gender: response.user.gender,
+      joined_at: response.user.joined_at,
+      birthday: response.user.birthday,
+    },
+  };
+}
+
 export class ProfileRepository extends BaseRepository<ProfileResponse> {
   constructor() {
-    super("/profile"); // Base URL for profile endpoints
+    super("");
   }
 
-  // Fetch the logged-in user's profile
   async getProfile(): Promise<Profile> {
-    try {
-      const response = await this.get<ProfileResponse>("/");
-
-      if (!response || !response.user) {
-        throw new Error("Invalid profile data received from the server");
-      }
-
-      return {
-        ...response,
-        id: Number(response.id),
-        post_photos: (response as any).post_photos ?? [],
-        user: {
-          id: Number(response.user.id),
-          email: response.user.email,
-          gender: response.user.gender,
-          joined_at: response.user.joined_at,
-          birthday: response.user.birthday,
-        },
-      };
-    } catch (error) {
-      console.error("Failed to fetch profile:", error);
-      throw error;
+    const response = await this.get<ProfileResponse>(api.profile.me());
+    if (!response || !response.user) {
+      throw new Error("Invalid profile data received from the server");
     }
+    return toProfile(response);
   }
 
-  // Update the logged-in user's profile
   async updateProfile(updatedData: Partial<Profile>): Promise<Profile> {
-    try {
-      const response = await this.patch<ProfileResponse>("/", updatedData);
-
-      if (!response || !response.user) {
-        throw new Error("Invalid profile data received from the server");
-      }
-
-      return {
-        ...response,
-        id: Number(response.id),
-        post_photos: (response as any).post_photos ?? [],
-        user: {
-          id: Number(response.user.id),
-          email: response.user.email,
-          gender: response.user.gender,
-          joined_at: response.user.joined_at,
-          birthday: response.user.birthday,
-        },
-      };
-    } catch (error) {
-      console.error("Failed to update profile:", error);
-      throw error;
+    const response = await this.patch<ProfileResponse>(api.profile.root(), updatedData);
+    if (!response || !response.user) {
+      throw new Error("Invalid profile data received from the server");
     }
+    return toProfile(response);
   }
 
-  // Upload a new profile picture
   async uploadProfilePicture(file: File): Promise<Profile> {
-    try {
-      const formData = new FormData();
-      formData.append("profile_picture", file);
-
-      const response = await this.patch<ProfileResponse>("/", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      if (!response || !response.user) {
-        throw new Error("Invalid profile data received from the server");
-      }
-
-      return {
-        ...response,
-        id: Number(response.id),
-        post_photos: (response as any).post_photos ?? [],
-        user: {
-          id: Number(response.user.id),
-          joined_at: response.user.joined_at,
-          gender: response.user.gender,
-          email: response.user.email,
-          birthday: response.user.birthday,
-        },
-      };
-    } catch (error) {
-      console.error("Failed to upload profile picture:", error);
-      throw error;
+    const formData = new FormData();
+    formData.append("profile_picture", file);
+    const response = await this.post<ProfileResponse>(api.uploads.profilePicture(), formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    if (!response || !response.user) {
+      throw new Error("Invalid profile data received from the server");
     }
+    return toProfile(response);
   }
 
-  // Upload a new cover photo
   async uploadCoverPhoto(file: File): Promise<Profile> {
-    try {
-      const formData = new FormData();
-      formData.append("cover_photo", file);
-
-      const response = await this.patch<ProfileResponse>("/", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      if (!response || !response.user) {
-        throw new Error("Invalid profile data received from the server");
-      }
-
-      return {
-        ...response,
-        id: Number(response.id),
-        post_photos: (response as any).post_photos ?? [],
-        user: {
-          id: Number(response.user.id),
-          joined_at: response.user.joined_at,
-          gender: response.user.gender,
-          email: response.user.email,
-          birthday: response.user.birthday,
-        },
-      };
-    } catch (error) {
-      console.error("Failed to upload cover photo:", error);
-      throw error;
+    const formData = new FormData();
+    formData.append("cover_photo", file);
+    const response = await this.post<ProfileResponse>(api.uploads.coverPhoto(), formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    if (!response || !response.user) {
+      throw new Error("Invalid profile data received from the server");
     }
+    return toProfile(response);
   }
 
-  // Delete the logged-in user's account
   async deleteAccount(): Promise<void> {
-    try {
-      await this.delete<void>("/");
-    } catch (error) {
-      console.error("Failed to delete account:", error);
-      throw error;
-    }
+    await this.delete<void>(api.profile.root());
   }
 
-  // Fetch a public profile by user ID
   async getPublicProfile(userId: string | number): Promise<any> {
-    return this.get<any>(`/profiles/${userId}/public/`);
+    return this.get<any>(api.profile.public(userId));
   }
 
-  // Fetch followers for a user
   async getFollowers(userId: string | number): Promise<any[]> {
-    return this.get<any[]>(`/profiles/${userId}/followers/`);
+    return this.get<any[]>(api.profile.followers(userId));
   }
 
-  // Fetch following for a user
   async getFollowing(userId: string | number): Promise<any[]> {
-    return this.get<any[]>(`/profiles/${userId}/following/`);
+    return this.get<any[]>(api.profile.following(userId));
   }
 
-  // Follow a user
   async followUser(userId: string | number): Promise<void> {
-    await this.post(`/profiles/${userId}/follow/`);
+    await this.post(api.profile.follow(userId));
   }
 
-  // Unfollow a user
   async unfollowUser(userId: string | number): Promise<void> {
-    await this.delete(`/profiles/${userId}/follow/`);
+    await this.delete(api.profile.follow(userId));
   }
 
-  // Fetch notifications for the logged-in user
   async getNotifications(): Promise<any[]> {
-    return this.get<any[]>("/notifications/");
+    return this.get<any[]>(api.notifications.list());
   }
 
-  // Fetch friends for the logged-in user
   async getFriends(): Promise<any[]> {
-    return this.get<any[]>(`/list-friends/`);
+    return this.get<any[]>(api.friends.list());
   }
 
-  // Remove profile picture
   async removeProfilePicture(): Promise<Profile> {
-    try {
-      const response = await this.patch<ProfileResponse>("/", { profile_picture: null });
-      if (!response || !response.user) {
-        throw new Error("Invalid profile data received from the server");
-      }
-      return {
-        ...response,
-        id: Number(response.user.id),
-        post_photos: (response as any).post_photos ?? [],
-        user: {
-          id: Number(response.user.id),
-          joined_at: response.user.joined_at,
-          gender: response.user.gender,
-          email: response.user.email,
-          birthday: response.user.birthday,
-        },
-      };
-    } catch (error) {
-      console.error("Failed to remove profile picture:", error);
-      throw error;
+    const response = await this.patch<ProfileResponse>(api.profile.root(), { profile_picture: null });
+    if (!response || !response.user) {
+      throw new Error("Invalid profile data received from the server");
     }
+    return toProfile(response);
   }
 
-  // Remove cover photo
   async removeCoverPhoto(): Promise<Profile> {
-    try {
-      const response = await this.patch<ProfileResponse>("/", { cover_photo: null });
-      if (!response || !response.user) {
-        throw new Error("Invalid profile data received from the server");
-      }
-      return {
-        ...response,
-        id: Number(response.user.id),
-        post_photos: (response as any).post_photos ?? [],
-        user: {
-          id: Number(response.user.id),
-          joined_at: response.user.joined_at,
-          gender: response.user.gender,
-          email: response.user.email,
-          birthday: response.user.birthday,
-        },
-      };
-    } catch (error) {
-      console.error("Failed to remove cover photo:", error);
-      throw error;
+    const response = await this.patch<ProfileResponse>(api.profile.root(), { cover_photo: null });
+    if (!response || !response.user) {
+      throw new Error("Invalid profile data received from the server");
     }
+    return toProfile(response);
   }
 
   async getFriendsForUser(profileId: string | number): Promise<any[]> {
-    return this.get<any[]>(`/profiles/${profileId}/friends/`);
+    return this.get<any[]>(api.profile.friends(profileId));
   }
 
-  
-  async markNotificationRead(id: number): Promise<any> {
-    return this.patch<any>(`/notifications/${id}/`, { is_read: true });
+  async markNotificationRead(id: string | number): Promise<any> {
+    return this.patch<any>(api.notifications.byId(id), { is_read: true });
   }
 
-  // Mark all notifications as read
   async markAllNotificationsRead(): Promise<any> {
-    return this.patch<any>(`/notifications/`, { all_read: true });
+    return this.patch<any>(api.notifications.list(), { all_read: true });
   }
 
-  // Delete a notification by id
-  async deleteNotification(id: number): Promise<any> {
-    return this.delete(`/notifications/${id}/`);
+  async deleteNotification(id: string | number): Promise<any> {
+    return this.delete(api.notifications.byId(id));
   }
 
-  // Mark a notification as unread
-  async markNotificationUnread(id: number): Promise<any> {
-    return this.patch<any>(`/notifications/${id}/`, { is_read: false });
+  async markNotificationUnread(id: string | number): Promise<any> {
+    return this.patch<any>(api.notifications.byId(id), { is_read: false });
   }
 }
 
-// Export an instance of ProfileRepository
 export const profileRepository = new ProfileRepository();

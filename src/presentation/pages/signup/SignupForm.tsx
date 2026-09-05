@@ -12,7 +12,6 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
     birthday: "",
     gender: "male",
     email: "",
-    password: "",
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
@@ -42,11 +41,6 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
       newErrors.email = "Email is required";
     } else if (!isValidEmail(formData.email)) {
       newErrors.email = "Please enter a valid email address";
-    }
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters long";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -85,7 +79,6 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
               const msg = data[key].toLowerCase();
               if (msg.includes("username")) fieldErrors.username = data[key];
               else if (msg.includes("email")) fieldErrors.email = data[key];
-              else if (msg.includes("password")) fieldErrors.password = data[key];
               else if (msg.includes("first name")) fieldErrors.firstname = data[key];
               else if (msg.includes("last name")) fieldErrors.lastname = data[key];
               else if (msg.includes("birthday")) fieldErrors.birthday = data[key];
@@ -173,19 +166,6 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
             required 
           />
           {errors.email && <div className="text-red-600 text-sm mt-1">{errors.email}</div>}
-        </div>
-        <div>
-          <input 
-            type="password" 
-            name="password" 
-            placeholder="Password" 
-            value={formData.password} 
-            onChange={handleChange} 
-            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
-            required 
-            minLength={6}
-          />
-          {errors.password && <div className="text-red-600 text-sm mt-1">{errors.password}</div>}
         </div>
         <button 
           type="submit" 

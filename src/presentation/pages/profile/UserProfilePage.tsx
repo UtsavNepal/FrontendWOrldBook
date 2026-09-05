@@ -7,10 +7,18 @@ import MainLayout from "../../components/MainLayout";
 import { friendRepository } from '../../../infrastructure/repositories/FriendRepository';
 import { postRepository } from '../../../infrastructure/repositories/PostRepository';
 import Spinner from "../../ui/Spinner";
-import { getImageUrl } from '../../../utils/getImageUrl';
+import { getCoverUrl, getImageUrl } from '../../../utils/getImageUrl';
+import PostStoryMedia from "../../components/PostStoryMedia";
 import UserListItem from "../../components/UserListItem";
 import { useFriendContext } from "../../../core/application/context/FriendContext";
 import { useProfile } from "../../../core/application/context/ProfileContext";
+import LikeButton from "../../components/LikeButton";
+import OptionsMenu, { isOwnedBy } from "../../components/OptionsMenu";
+import { useConfirm } from "../../components/useConfirm";
+import { useChatContext } from "../../../core/application/context/ChatContext";
+import { refersTo } from "../../../utils/friendStatus";
+import { saveVisitedProfile } from "../../../utils/searchHistory";
+import { postStoryLine, visibilityLabel } from "../../../utils/postStory";
 
 
 const UserProfilePage: React.FC = () => {
@@ -29,16 +37,28 @@ const UserProfilePage: React.FC = () => {
   const [loadingFollowing, setLoadingFollowing] = useState(false);
   const [friendRequestId, setFriendRequestId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
-  const [commentingPostId, setCommentingPostId] = useState<number | null>(null);
+  const [commentingPostId, setCommentingPostId] = useState<string | null>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'posts' | 'followers' | 'following' | 'friends'>('posts');
   const [friendsList, setFriendsList] = useState<any[]>([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
   const { unfriend } = useFriendContext();
   const { profile: authProfile } = useProfile();
+  const { openChatWithUser } = useChatContext();
+  const { confirm, modal } = useConfirm();
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editedComment, setEditedComment] = useState("");
 
-  const receivedRequestFromUser = receivedRequests.find((r: any) => r.from_user.id === Number(id));
-  const sentRequestToUser = sentRequests.find((r: any) => r.to_user.id === Number(id));
+  const personRef = { id, user: profile?.user, profile_id: profile?.id };
+  const receivedRequestFromUser = receivedRequests.find((r: any) => refersTo(r.from_user, personRef))
+    || (profile?.friend_request_received && profile.friend_request_id
+      ? { id: profile.friend_request_id }
+      : null);
+  const sentRequestToUser = sentRequests.find((r: any) => refersTo(r.to_user, personRef))
+    || (profile?.friend_request_sent && profile.friend_request_id
+      ? { id: profile.friend_request_id }
+      : null);
+  const isFriend = Boolean(profile?.is_friend);
 
   const fetchFollowStatus = async () => {
     try {
@@ -59,6 +79,15 @@ const UserProfilePage: React.FC = () => {
         const res = await profileRepository.getPublicProfile(id!);
         setProfile(res);
         setPosts(res.posts || []);
+        if (res && user && String(res.user?.id) !== String(user.id) && String(res.id) !== String(user.profile?.id)) {
+          saveVisitedProfile({
+            id: String(res.user?.id || res.id),
+            username: res.username || "User",
+            firstname: (res.user as any)?.firstname,
+            lastname: (res.user as any)?.lastname,
+            profile_picture: res.profile_picture,
+          });
+        }
       } catch (err) {
         setProfile(null);
         setPosts([]);
@@ -72,7 +101,9 @@ const UserProfilePage: React.FC = () => {
         setReceivedRequests(received);
         const sent = await friendRepository.listSentFriendRequests();
         setSentRequests(sent);
-        const sentReq = sent.find((r: any) => r.to_user.id === Number(id));
+        const sentReq = sent.find((r: any) =>
+          String(r.to_user?.user?.id || r.to_user?.id) === String(id)
+        );
         if (sentReq) {
           setFriendRequestId(String(sentReq.id));
         } else {
@@ -87,48 +118,103 @@ const UserProfilePage: React.FC = () => {
     fetchFollowStatus();
   }, [id, user]);
 
-  const handleLike = async (postId: number) => {
-    await postRepository.toggleLikePost(postId);
-    
+  const handleLike = async (postId: string) => {
+    const updated = await postRepository.toggleLikePost(postId);
+    setPosts((prev) =>
+      prev.map((post) =>
+        post.id === postId
+          ? { ...post, likes: updated.likes, is_liked: updated.is_liked }
+          : post
+      )
+    );
   };
 
-  const handleComment = async (postId: number) => {
+  const handleComment = async (postId: string) => {
     if (!commentText.trim()) return;
-    await postRepository.commentOnPost(postId, commentText);
+    const newComment = await postRepository.commentOnPost(postId, commentText);
     setCommentText("");
-    setCommentingPostId(null);
+    setPosts((prev) =>
+      prev.map((post) =>
+        post.id === postId
+          ? { ...post, comments: [...(post.comments || []), newComment] }
+          : post
+      )
+    );
+  };
+
+  const handleSaveComment = async (commentId: string) => {
+    if (!editedComment.trim()) return;
+    const updated = await postRepository.updateComment(commentId, editedComment);
+    setEditingCommentId(null);
+    setEditedComment("");
+    setPosts((prev) =>
+      prev.map((post) => ({
+        ...post,
+        comments: (post.comments || []).map((comment: any) =>
+          comment.id === commentId ? { ...comment, ...updated } : comment
+        ),
+      }))
+    );
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    const ok = await confirm({
+      title: "Delete comment",
+      message: "Are you sure you want to delete this comment?",
+    });
+    if (!ok) return;
+    await postRepository.deleteComment(commentId);
+    setPosts((prev) =>
+      prev.map((post) => ({
+        ...post,
+        comments: (post.comments || []).filter((comment: any) => comment.id !== commentId),
+      }))
+    );
   };
 
   const handleSendFriendRequest = async () => {
+    if (!profile?.user?.id) return;
     try {
-      await friendRepository.sendFriendRequest(String(profile!.user.id));
-      await refreshData();
+      const created = await friendRepository.sendFriendRequest(String(profile.user.id));
+      setSentRequests((requests) =>
+        requests.some((request) => String(request.id) === String(created.id))
+          ? requests
+          : [...requests, created]
+      );
+      setFriendRequestId(String(created.id));
+      setProfile((current) => current
+        ? { ...current, friend_request_sent: true, friend_request_id: String(created.id) }
+        : current);
     } catch (err: any) {
-      if (err?.response?.data?.error?.toLowerCase().includes('already sent')) {
-        await refreshData();
+      const message = String(err?.response?.data?.error || err?.message || "");
+      if (message.toLowerCase().includes("already sent")) {
+        const sent = await friendRepository.listSentFriendRequests();
+        setSentRequests(sent);
+        const sentReq = sent.find((r: any) => refersTo(r.to_user, personRef));
+        setFriendRequestId(sentReq ? String(sentReq.id) : null);
+        setProfile((current) => current
+          ? { ...current, friend_request_sent: true, friend_request_id: sentReq ? String(sentReq.id) : current.friend_request_id }
+          : current);
       }
     }
   };
 
   const handleCancelFriendRequest = async () => {
-    if (!friendRequestId) return;
-
-    // Optimistically update UI
+    const request = sentRequestToUser;
+    if (!request) return;
+    setSentRequests((requests) => requests.filter((r: any) => String(r.id) !== String(request.id)));
     setFriendRequestId(null);
-
-    // Remove the request from local sentRequests state
-    setSentRequests(requests => requests.filter((r: any) => r.id !== friendRequestId));
-
-    // Send backend request and refresh data in background
-    const id = typeof friendRequestId === 'string' ? parseInt(friendRequestId, 10) : friendRequestId;
-    if (!isNaN(id)) {
-      friendRepository.rejectFriendRequest(id)
-        .finally(async () => {
-          await refreshData();
-          await fetchFollowersList();
-          await fetchFollowingList();
-          await fetchFollowStatus();
-        });
+    setProfile((current) => current
+      ? { ...current, friend_request_sent: false, friend_request_id: null }
+      : current);
+    try {
+      await friendRepository.cancelFriendRequest(request.id);
+    } catch {
+      setSentRequests((requests) => [...requests, request]);
+      setFriendRequestId(String(request.id));
+      setProfile((current) => current
+        ? { ...current, friend_request_sent: true, friend_request_id: String(request.id) }
+        : current);
     }
   };
 
@@ -211,67 +297,78 @@ const UserProfilePage: React.FC = () => {
     return null;
   }
 
-  if (loading) return <Spinner />;
-  if (!profile) return <div>Profile not found.</div>;
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="wb-page"><Spinner /></div>
+      </MainLayout>
+    );
+  }
+  if (!profile) {
+    return (
+      <MainLayout>
+        <div className="wb-page"><div className="wb-empty">Profile not found.</div></div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
-      <div className="flex flex-col items-center bg-gray-50 min-h-screen w-full">
-        {/* Cover Photo */}
-        <div className="w-full relative h-48 sm:h-64 md:h-72 bg-gray-300 dark:bg-gray-700">
-          <img
-            src={profile.cover_photo ? getImageUrl(profile.cover_photo) || '' : '/default-cover.jpg'}
-            alt="Cover"
-            className="w-full h-full object-cover object-center"
-          />
-          {/* Profile Picture - Overlapping */}
-          <div className="absolute left-8 bottom-[-48px] sm:bottom-[-64px] md:bottom-[-72px]">
+      {modal}
+      <div className="wb-page !px-0 !py-0">
+        <div className="mx-auto w-full max-w-4xl overflow-hidden bg-white shadow-card md:rounded-b-xl">
+        <div className="relative h-48 w-full bg-gray-300 sm:h-64 md:h-72">
+          {getCoverUrl(profile.cover_photo) && (
             <img
-              src={profile.profile_picture ? getImageUrl(profile.profile_picture) || '' : '/default-avatar.png'}
+              src={getCoverUrl(profile.cover_photo)!}
+              alt="Cover"
+              className="h-full w-full object-cover object-center"
+            />
+          )}
+          <div className="absolute left-6 bottom-[-48px] sm:left-8 sm:bottom-[-64px]">
+            <img
+              src={getImageUrl(profile.profile_picture)}
               alt="Profile"
-              className="w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-full object-cover border-4 border-white shadow-lg bg-gray-200 dark:bg-gray-900"
+              className={`h-24 w-24 rounded-full border-4 border-white bg-gray-200 shadow-lg sm:h-32 sm:w-32 md:h-36 md:w-36 ${profile.profile_picture ? "object-cover" : "object-contain p-5 sm:p-7"}`}
             />
           </div>
         </div>
         
-        <div className="flex flex-col sm:flex-row justify-between w-full max-w-4xl mt-16 px-4 gap-4">
-          
-          <div className="flex flex-col items-start flex-1 min-w-[200px]">
-            <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mt-2">{profile.username}</div>
-            <div className="text-base text-gray-700 dark:text-gray-300 mb-2">{profile.bio}</div>
+        <div className="mt-16 flex flex-col justify-between gap-4 px-4 sm:flex-row sm:items-end sm:px-8">
+          <div>
+            <h1 className="text-2xl font-bold">{profile.username}</h1>
+            {profile.bio && <p className="mt-1 text-sm text-wb-muted">{profile.bio}</p>}
           </div>
-          {/* Right: Actions */}
-          <div className="flex flex-col items-end gap-2 min-w-[220px]">
+          <div className="flex flex-col items-start gap-2 sm:items-end">
             {user && String(user.id) !== String(id) && (
-              <div className="flex flex-row flex-wrap gap-2 w-full justify-end">
-                {profile.is_friend ? (
+              <div className="flex flex-wrap gap-2">
+                {isFriend ? (
                   <div className="relative">
                     <button
                       onClick={() => setShowFollowDropdown((v) => !v)}
-                      className="border border-gray-300 text-gray-700 dark:text-gray-300 px-2 py-1 rounded bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                      className="wb-btn-secondary"
                     >
                       Friends
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
                     </button>
                     {showFollowDropdown && (
-                      <div className="absolute left-0 mt-2 bg-white dark:bg-gray-900 border rounded shadow z-10 min-w-[140px]">
+                      <div className="absolute right-0 z-10 mt-2 min-w-[140px] overflow-hidden rounded-xl border border-wb-line bg-white shadow-card">
                         {following ? (
                           <button
-                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                            className="block w-full px-4 py-2 text-left text-sm hover:bg-wb-canvas"
                             onClick={() => { handleUnfollow(); setShowFollowDropdown(false); }}
                           >
                             Unfollow
                           </button>
                         ) : (
                           <button
-                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                            className="block w-full px-4 py-2 text-left text-sm hover:bg-wb-canvas"
                             onClick={() => { handleFollow(); setShowFollowDropdown(false); }}
                           >
                             Follow
                           </button>
                         )}
                         <button
-                          className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-red-600 dark:text-red-400"
+                          className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-wb-canvas"
                           onClick={() => { handleUnfriend(profile!.user.id); setShowFollowDropdown(false); }}
                         >
                           Unfriend
@@ -288,7 +385,7 @@ const UserProfilePage: React.FC = () => {
                         setReceivedRequests(requests => requests.filter((r: any) => r.id !== receivedRequestFromUser.id));
                         await refreshData();
                       }}
-                      className="border border-gray-300 text-gray-700 dark:text-gray-300 px-2 py-1 rounded bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      className="wb-btn-primary"
                     >
                       Accept
                     </button>
@@ -298,32 +395,32 @@ const UserProfilePage: React.FC = () => {
                         setReceivedRequests(requests => requests.filter((r: any) => r.id !== receivedRequestFromUser.id));
                         await refreshData();
                       }}
-                      className="border border-gray-300 text-gray-700 dark:text-gray-300 px-2 py-1 rounded bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      className="wb-btn-secondary"
                     >
-                      Reject
+                      Decline
                     </button>
                   </>
                 ) : sentRequestToUser ? (
                   <>
-                    <span className="text-gray-500">Friend Request Sent</span>
+                    <span className="text-sm text-wb-muted">Request sent</span>
                     <button
                       onClick={() => handleCancelFriendRequest()}
-                      className="border border-gray-300 text-gray-700 dark:text-gray-300 px-2 py-1 rounded bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      className="wb-btn-secondary"
                     >
-                      Cancel Request
+                      Cancel
                     </button>
                   </>
                 ) : (
                   <button
                     onClick={handleSendFriendRequest}
-                    className="border border-gray-300 text-gray-700 dark:text-gray-300 px-2 py-1 rounded bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="wb-btn-primary"
                   >
-                    Add Friend
+                    Add friend
                   </button>
                 )}
                 <button
-                  className="border border-gray-300 text-gray-700 dark:text-gray-300 px-2 py-1 rounded bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  onClick={() => navigate(`/chat?user=${id}`)}
+                  className="wb-btn-secondary"
+                  onClick={() => openChatWithUser(String(profile.user?.id || id))}
                 >
                   Message
                 </button>
@@ -332,65 +429,127 @@ const UserProfilePage: React.FC = () => {
             
           </div>
         </div>
-        {/* Tabs */}
-        <div className="flex flex-wrap sm:flex-nowrap justify-center gap-2 sm:gap-8 border-b pb-2 mb-4 mt-8 w-full max-w-4xl overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300">
-          <button className={`px-2 sm:px-4 py-1 sm:py-2 text-sm sm:text-base font-semibold whitespace-nowrap ${activeTab === 'posts' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => setActiveTab('posts')}>Posts </button>
-          <button className={`px-2 sm:px-4 py-1 sm:py-2 text-sm sm:text-base font-semibold whitespace-nowrap ${activeTab === 'followers' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('followers'); fetchFollowersList(); }}>Followers </button>
-          <button className={`px-2 sm:px-4 py-1 sm:py-2 text-sm sm:text-base font-semibold whitespace-nowrap ${activeTab === 'following' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('following'); fetchFollowingList(); }}>Following </button>
-          <button className={`px-2 sm:px-4 py-1 sm:py-2 text-sm sm:text-base font-semibold whitespace-nowrap ${activeTab === 'friends' ? 'border-b-2 border-blue-500' : ''}`} onClick={() => { setActiveTab('friends'); fetchFriendsList(); }}>Friends </button>
+        <div className="mt-6 flex gap-1 overflow-x-auto border-b border-wb-line px-2 sm:px-8">
+          <button className={`px-4 py-3 text-sm font-semibold ${activeTab === 'posts' ? 'border-b-2 border-wb-blue text-wb-blue' : 'text-wb-muted'}`} onClick={() => setActiveTab('posts')}>Posts</button>
+          <button className={`px-4 py-3 text-sm font-semibold ${activeTab === 'followers' ? 'border-b-2 border-wb-blue text-wb-blue' : 'text-wb-muted'}`} onClick={() => { setActiveTab('followers'); fetchFollowersList(); }}>Followers</button>
+          <button className={`px-4 py-3 text-sm font-semibold ${activeTab === 'following' ? 'border-b-2 border-wb-blue text-wb-blue' : 'text-wb-muted'}`} onClick={() => { setActiveTab('following'); fetchFollowingList(); }}>Following</button>
+          <button className={`px-4 py-3 text-sm font-semibold ${activeTab === 'friends' ? 'border-b-2 border-wb-blue text-wb-blue' : 'text-wb-muted'}`} onClick={() => { setActiveTab('friends'); fetchFriendsList(); }}>Friends</button>
         </div>
-        {/* Tab Content */}
-        <div className="w-full max-w-xl p-2 sm:p-4 md:p-6 lg:p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md mt-8 mx-auto flex-1 h-full">
+        <div className="p-4 sm:p-6">
           {activeTab === 'posts' && (
             <div>
-              {posts.length === 0 && <div>No posts to show.</div>}
+              {posts.length === 0 ? (
+                <div className="wb-empty">No posts yet.</div>
+              ) : (
+              <div className="space-y-4">
               {posts.map((post) => (
-                <div key={post.id} className="border rounded p-4 mb-4">
-                  {post.image && getImageUrl(post.image) && (
-                    <img src={getImageUrl(post.image) || undefined} alt="Post" className="w-full h-48 object-cover mb-2" />
-                  )}
-                  <p>{post.content}</p>
-                  <div className="flex space-x-4 mt-2">
-                    <button
+                <article key={post.id} className="wb-card overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-3">
+                    <img
+                      src={getImageUrl(post.profile?.profile_picture || profile.profile_picture)}
+                      alt={post.profile?.username || profile.username}
+                      className="h-10 w-10 rounded-full object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm">
+                        <span className="font-semibold">{post.profile?.username || profile.username}</span>
+                        {postStoryLine(post) && <span className="font-normal"> {postStoryLine(post)}</span>}
+                      </p>
+                      <p className="text-xs text-wb-muted">{visibilityLabel(post.visibility)}</p>
+                    </div>
+                  </div>
+                  {post.content && <p className="px-4 pb-3 text-[15px]">{post.content}</p>}
+                  <PostStoryMedia post={post} />
+                  <div className="flex border-t border-wb-line px-2 py-1">
+                    <LikeButton
+                      liked={post.is_liked}
+                      count={post.likes || 0}
                       onClick={() => handleLike(post.id)}
-                      className="text-blue-500 hover:underline"
-                    >
-                      Like ({post.likes})
-                    </button>
+                    />
                     <button
-                      onClick={() => setCommentingPostId(post.id)}
-                      className="text-green-500 hover:underline"
+                      onClick={() => setCommentingPostId(commentingPostId === post.id ? null : post.id)}
+                      className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold text-wb-muted hover:bg-wb-canvas"
                     >
-                      Comment
+                      Comment {post.comments?.length || 0}
                     </button>
                   </div>
                   {commentingPostId === post.id && (
-                    <div className="mt-2">
-                      <input
-                        type="text"
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        className="border p-1 rounded w-2/3"
-                        placeholder="Write a comment..."
-                      />
-                      <button
-                        onClick={() => handleComment(post.id)}
-                        className="ml-2 bg-blue-500 text-white px-2 py-1 rounded"
-                      >
-                        Post
-                      </button>
+                    <div className="border-t border-wb-line px-4 py-3">
+                      <div className="mb-3 flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          className="wb-input"
+                          placeholder="Write a comment..."
+                        />
+                        <button
+                          onClick={() => handleComment(post.id)}
+                          className="wb-btn-primary"
+                        >
+                          Post
+                        </button>
+                      </div>
+                      {post.comments?.length ? (
+                        post.comments.map((comment: any) => (
+                          <div key={comment.id} className="mb-3 flex items-start">
+                            <img
+                              src={getImageUrl(comment.profile?.profile_picture)}
+                              alt=""
+                              className="mr-2 h-7 w-7 shrink-0 rounded-full object-cover"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="rounded-2xl bg-wb-canvas px-3 py-2">
+                                <p className="text-sm font-semibold">{comment.profile?.username}</p>
+                                {editingCommentId === comment.id ? (
+                                  <input
+                                    type="text"
+                                    value={editedComment}
+                                    onChange={(e) => setEditedComment(e.target.value)}
+                                    className="wb-input mt-1"
+                                  />
+                                ) : (
+                                  <p className="text-sm text-wb-ink">{comment.comment}</p>
+                                )}
+                              </div>
+                            </div>
+                            {editingCommentId === comment.id ? (
+                              <div className="ml-2 flex shrink-0 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveComment(comment.id)}
+                                  className="text-xs font-bold text-wb-blue"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setEditingCommentId(null); setEditedComment(""); }}
+                                  className="text-xs font-bold text-wb-muted"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : isOwnedBy(comment.profile?.user?.id, user?.id) ? (
+                              <OptionsMenu
+                                onEdit={() => {
+                                  setEditingCommentId(comment.id);
+                                  setEditedComment(comment.comment);
+                                }}
+                                onDelete={() => handleDeleteComment(comment.id)}
+                              />
+                            ) : null}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-wb-muted">No comments yet.</p>
+                      )}
                     </div>
                   )}
-                  <div className="mt-2">
-                    <h4 className="font-semibold">Comments</h4>
-                    {post.comments?.map((comment: any) => (
-                      <div key={comment.id} className="text-sm border-b py-1">
-                        <span className="font-semibold">{comment.profile?.username}:</span> {comment.comment}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                </article>
               ))}
+              </div>
+              )}
             </div>
           )}
           {activeTab === 'followers' && (
@@ -435,36 +594,39 @@ const UserProfilePage: React.FC = () => {
         </div>
         {/* Show all received friend requests if any */}
         {receivedRequests.length > 0 && (
-          <div className="mb-6 w-full max-w-4xl">
-            <h3 className="text-xl font-semibold mb-2">Friend Requests</h3>
-            <div className="flex flex-wrap gap-2">
+          <div className="border-t border-wb-line p-4 sm:p-6">
+            <h3 className="mb-3 text-lg font-bold">Friend requests</h3>
+            <div className="space-y-2">
               {receivedRequests.map((req: any) => (
-                <div key={req.id} className="flex items-center gap-2 border p-2 rounded">
-                  <span>{req.from_user.username}</span>
-                  <button
-                    onClick={async () => {
-                      await friendRepository.acceptFriendRequest(req.id);
-                      setProfile(profile => profile ? { ...profile, is_friend: true } : profile);
-                      setReceivedRequests(requests => requests.filter((r: any) => r.id !== req.id));
-                    }}
-                    className="bg-green-500 text-white px-2 py-1 rounded"
-                  >
-                    Accept
-                  </button>
-                  <button
-                    onClick={async () => {
-                      await friendRepository.rejectFriendRequest(req.id);
-                      setReceivedRequests(requests => requests.filter((r: any) => r.id !== req.id));
-                    }}
-                    className="bg-red-500 text-white px-2 py-1 rounded"
-                  >
-                    Reject
-                  </button>
+                <div key={req.id} className="flex items-center justify-between gap-2 rounded-xl border border-wb-line p-3">
+                  <span className="font-semibold">{req.from_user.username}</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        await friendRepository.acceptFriendRequest(req.id);
+                        setProfile(profile => profile ? { ...profile, is_friend: true } : profile);
+                        setReceivedRequests(requests => requests.filter((r: any) => r.id !== req.id));
+                      }}
+                      className="wb-btn-primary"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      onClick={async () => {
+                        await friendRepository.rejectFriendRequest(req.id);
+                        setReceivedRequests(requests => requests.filter((r: any) => r.id !== req.id));
+                      }}
+                      className="wb-btn-secondary"
+                    >
+                      Decline
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         )}
+        </div>
       </div>
     </MainLayout>
   );

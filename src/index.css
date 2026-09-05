@@ -1,3 +1,77 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-wb-canvas text-wb-ink antialiased;
+  }
+}
+
+img[src$="profile_empty.svg"] {
+  object-fit: contain !important;
+  background-color: #e5e7eb;
+  padding: 0.4rem;
+}
+
+@layer components {
+  .wb-page {
+    @apply min-h-screen w-full bg-wb-canvas px-4 py-6 sm:px-6 lg:px-8;
+  }
+
+  .wb-container {
+    @apply mx-auto w-full max-w-[680px];
+  }
+
+  .wb-container-wide {
+    @apply mx-auto w-full max-w-4xl;
+  }
+
+  .wb-card {
+    @apply rounded-xl border border-wb-line bg-white shadow-card;
+  }
+
+  .wb-title {
+    @apply text-2xl font-bold tracking-tight text-wb-ink;
+  }
+
+  .wb-subtitle {
+    @apply text-sm font-semibold uppercase tracking-wide text-wb-muted;
+  }
+
+  .wb-input {
+    @apply w-full rounded-lg border border-wb-line bg-wb-canvas px-3 py-2.5 text-sm text-wb-ink outline-none transition focus:border-wb-blue focus:bg-white focus:ring-2 focus:ring-wb-blue/20;
+  }
+
+  .wb-btn {
+    @apply inline-flex items-center justify-center rounded-lg px-3.5 py-2 text-sm font-semibold transition;
+  }
+
+  .wb-btn-primary {
+    @apply wb-btn bg-wb-blue text-white hover:bg-wb-blue-hover disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .wb-btn-secondary {
+    @apply wb-btn bg-wb-canvas text-wb-ink hover:bg-wb-line;
+  }
+
+  .wb-btn-danger {
+    @apply wb-btn bg-red-50 text-red-600 hover:bg-red-100;
+  }
+
+  .wb-empty {
+    @apply rounded-xl border border-dashed border-wb-line bg-white px-6 py-12 text-center text-sm text-wb-muted;
+  }
+
+  .wb-chat-shell {
+    background: linear-gradient(180deg, #eef4ff 0%, #f4f0ff 55%, #eaf7f3 100%);
+  }
+
+  .wb-chat-thread {
+    background-color: #e8eef8;
+    background-image:
+      radial-gradient(circle at 18px 18px, rgba(24, 119, 242, 0.08) 1.5px, transparent 1.6px),
+      linear-gradient(180deg, #e4edfb 0%, #efe8ff 50%, #e6f6f1 100%);
+    background-size: 28px 28px, 100% 100%;
+  }
+}

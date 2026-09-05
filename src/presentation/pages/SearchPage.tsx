@@ -4,19 +4,46 @@ import { useFriendContext } from "../../core/application/context/FriendContext";
 import { useAuth } from "../../core/application/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "../components/MainLayout";
+import PageShell from "../components/PageShell";
+import { getImageUrl } from "../../utils/getImageUrl";
+import { Search, X } from "lucide-react";
+import {
+  loadRecentSearches,
+  loadVisitedProfiles,
+  removeRecentSearch as deleteRecentSearch,
+  removeVisitedProfile as deleteVisitedProfile,
+  saveRecentSearch as storeRecentSearch,
+  saveVisitedProfile as storeVisitedProfile,
+  VisitedProfile,
+} from "../../utils/searchHistory";
 
 const SearchPage: React.FC = () => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [recent, setRecent] = useState<string[]>([]);
-  const { sendFriendRequest, isRequestSent } = useFriendContext();
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => loadRecentSearches());
+  const [visitedProfiles, setVisitedProfiles] = useState<VisitedProfile[]>(() => loadVisitedProfiles());
+  const { sendFriendRequest, isRequestSent, getSentFriendRequests } = useFriendContext();
   const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
+    getSentFriendRequests();
+    const refreshHistory = () => {
+      setRecentSearches(loadRecentSearches());
+      setVisitedProfiles(loadVisitedProfiles());
+    };
+    refreshHistory();
+    window.addEventListener("focus", refreshHistory);
+    return () => window.removeEventListener("focus", refreshHistory);
+  }, []);
+
+  useEffect(() => {
     if (query.trim() === "") {
       setResults([]);
+      setLoading(false);
+      setRecentSearches(loadRecentSearches());
+      setVisitedProfiles(loadVisitedProfiles());
       return;
     }
     setLoading(true);
@@ -29,127 +56,200 @@ const SearchPage: React.FC = () => {
     return () => clearTimeout(timeout);
   }, [query, user]);
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(e.target.value);
-    if (e.target.value.trim() && !recent.includes(e.target.value.trim())) {
-      setRecent((prev) => [e.target.value.trim(), ...prev.slice(0, 4)]);
-    }
+  const saveRecentSearch = (term: string) => {
+    setRecentSearches(storeRecentSearch(term));
   };
+
+  const saveVisitedProfile = (person: VisitedProfile) => {
+    setVisitedProfiles(storeVisitedProfile(person));
+  };
+
+  const removeRecentSearch = (term: string) => {
+    setRecentSearches(deleteRecentSearch(term));
+  };
+
+  const removeVisitedProfile = (id: string) => {
+    setVisitedProfiles(deleteVisitedProfile(id));
+  };
+
+  const openProfile = (found: any) => {
+    if (query.trim()) saveRecentSearch(query);
+    saveVisitedProfile({
+      id: String(found.id),
+      username: found.username,
+      firstname: found.firstname,
+      lastname: found.lastname,
+      profile_picture: found.profile_picture,
+    });
+    navigate(`/profile/${found.id}`);
+  };
+
+  const submitSearch = () => {
+    saveRecentSearch(query);
+  };
+
+  const hasHistory = recentSearches.length > 0 || visitedProfiles.length > 0;
 
   return (
     <MainLayout>
-      <div className="min-h-screen flex flex-col md:flex-row bg-gray-50">
-        {/* Left: Search and Recent */}
-        <div className="w-full md:w-96 max-w-full bg-white dark:bg-gray-800 rounded-none md:rounded-l-lg p-4 sm:p-6 md:p-8 flex flex-col shadow-md" style={{ minHeight: "100vh" }}>
-          <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Search</h2>
-          <div className="relative mb-4 sm:mb-6">
-            <input
-              type="text"
-              value={query}
-              onChange={handleSearch}
-              placeholder="Search"
-              className="w-full p-2 sm:p-3 rounded bg-gray-200 dark:bg-gray-900 text-base sm:text-lg focus:outline-none"
-            />
-            {query && (
-              <button
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-lg"
-                onClick={() => setQuery("")}
-              >
-                ×
-              </button>
-            )}
-          </div>
-          <div>
-            
-          </div>
-          {/* On small screens, show suggestions below search/recent */}
-          <div className="block md:hidden mt-8">
-            <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center text-gray-800 dark:text-gray-100">Suggested for you</h2>
-            {loading ? (
-              <div className="text-center text-gray-500 text-sm sm:text-base">Searching...</div>
-            ) : (
-              <ul className="max-w-2xl mx-auto">
-                {results.map((user) => (
-                  <li key={user.id} className="flex flex-col sm:flex-row items-center justify-between py-3 border-b border-gray-200 gap-4 sm:gap-0">
-                    <div className="flex items-center gap-3 sm:gap-4">
-                      <img
-                        src={user.profile_picture
-                          ? (user.profile_picture.startsWith('http')
-                              ? user.profile_picture
-                              : `${import.meta.env.VITE_BACKEND_URL}${user.profile_picture}`)
-                          : "/default-avatar.png"}
-                        alt={user.username}
-                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover cursor-pointer"
-                        onClick={() => navigate(`/profile/${user.id}`)}
-                      />
-                      <div>
-                        <div
-                          className="font-bold text-gray-800 dark:text-gray-100 cursor-pointer hover:underline text-sm sm:text-base"
-                          onClick={() => navigate(`/profile/${user.id}`)}
-                        >
-                          {user.username}
-                        </div>
-                        <div className="text-gray-500 text-xs sm:text-sm">{user.firstname} {user.lastname}</div>
-                      </div>
-                    </div>
-                    <button
-                      className={`w-full sm:w-auto mt-2 sm:mt-0 px-4 sm:px-6 py-2 rounded text-white font-semibold text-xs sm:text-sm ${isRequestSent(user.id) ? "bg-gray-400 cursor-not-allowed" : "bg-blue-500 hover:bg-blue-600"}`}
-                      disabled={isRequestSent(user.id)}
-                      onClick={() => sendFriendRequest(user.id)}
-                    >
-                      {isRequestSent(user.id) ? "Request Sent" : "Add Friend"}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-        {/* Right: Results (hidden on mobile, shown on desktop) */}
-        <div className="hidden md:block flex-1 p-4 sm:p-8">
-          <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center text-gray-800 dark:text-gray-100">Suggested for you</h2>
-          {loading ? (
-            <div className="text-center text-gray-500 text-sm sm:text-base">Searching...</div>
-          ) : (
-            <ul className="max-w-2xl mx-auto">
-              {results.map((user) => (
-                <li key={user.id} className="flex flex-col sm:flex-row items-center justify-between py-3 border-b border-gray-200 gap-4 sm:gap-0">
-                  <div className="flex items-center gap-3 sm:gap-4">
-                    <img
-                      src={user.profile_picture
-                        ? (user.profile_picture.startsWith('http')
-                            ? user.profile_picture
-                            : `${import.meta.env.VITE_BACKEND_URL}${user.profile_picture}`)
-                        : "/default-avatar.png"}
-                      alt={user.username}
-                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover cursor-pointer"
-                      onClick={() => navigate(`/profile/${user.id}`)}
-                    />
-                    <div>
-                      <div
-                        className="font-bold text-gray-800 dark:text-gray-100 cursor-pointer hover:underline text-sm sm:text-base"
-                        onClick={() => navigate(`/profile/${user.id}`)}
-                      >
-                        {user.username}
-                      </div>
-                      <div className="text-gray-500 text-xs sm:text-sm">{user.firstname} {user.lastname}</div>
-                    </div>
-                  </div>
-                  <button
-                    className={`w-full sm:w-auto mt-2 sm:mt-0 px-4 sm:px-6 py-2 rounded text-white font-semibold text-xs sm:text-sm ${isRequestSent(user.id) ? "bg-gray-400 cursor-not-allowed" : "bg-blue-500 hover:bg-blue-600"}`}
-                    disabled={isRequestSent(user.id)}
-                    onClick={() => sendFriendRequest(user.id)}
-                  >
-                    {isRequestSent(user.id) ? "Request Sent" : "Add Friend"}
-                  </button>
-                </li>
-              ))}
-            </ul>
+      <PageShell title="Search">
+        <form
+          className="relative mb-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            submitSearch();
+          }}
+        >
+          <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-wb-muted" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search people"
+            className="wb-input pl-10"
+          />
+          {query && (
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-wb-muted"
+              onClick={() => setQuery("")}
+            >
+              <X size={16} />
+            </button>
           )}
-        </div>
-      </div>
+        </form>
+
+        {!query && hasHistory && (
+          <div className="mb-6 space-y-5">
+            {recentSearches.length > 0 && (
+              <section>
+                <h2 className="mb-2 text-sm font-semibold text-wb-muted">Recently searched</h2>
+                <div className="flex flex-wrap gap-2">
+                  {recentSearches.map((term) => (
+                    <div key={term} className="flex items-center rounded-full bg-white shadow-card">
+                      <button
+                        type="button"
+                        onClick={() => setQuery(term)}
+                        className="px-3 py-1 text-xs font-medium text-wb-ink"
+                      >
+                        {term}
+                      </button>
+                      <button
+                        type="button"
+                        className="pr-2 text-wb-muted hover:text-wb-ink"
+                        onClick={() => removeRecentSearch(term)}
+                        aria-label={`Remove ${term}`}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+            {visitedProfiles.length > 0 && (
+              <section>
+                <h2 className="mb-2 text-sm font-semibold text-wb-muted">Visited profiles</h2>
+                <ul className="space-y-2">
+                  {visitedProfiles.map((person) => (
+                    <li key={person.id} className="wb-card flex items-center gap-3 p-3">
+                      <button
+                        type="button"
+                        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                        onClick={() => navigate(`/profile/${person.id}`)}
+                      >
+                        <img
+                          src={getImageUrl(person.profile_picture)}
+                          alt={person.username}
+                          className="h-10 w-10 rounded-full object-cover"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold">{person.username}</p>
+                          {(person.firstname || person.lastname) && (
+                            <p className="truncate text-sm text-wb-muted">
+                              {[person.firstname, person.lastname].filter(Boolean).join(" ")}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-full p-1 text-wb-muted hover:bg-wb-canvas"
+                        onClick={() => removeVisitedProfile(person.id)}
+                        aria-label={`Remove ${person.username}`}
+                      >
+                        <X size={16} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="wb-empty">Searching...</div>
+        ) : !query ? (
+          !hasHistory && <div className="wb-empty">Search for people by name or username.</div>
+        ) : results.length === 0 ? (
+          <div className="wb-empty">No people found for “{query}”.</div>
+        ) : (
+          <ul className="space-y-3">
+            {results.map((found) => (
+              <li key={found.id} className="wb-card flex items-center justify-between gap-3 p-3">
+                <button
+                  className="flex min-w-0 items-center gap-3 text-left"
+                  onClick={() => openProfile(found)}
+                >
+                  <img
+                    src={getImageUrl(found.profile_picture)}
+                    alt={found.username}
+                    className="h-12 w-12 rounded-full object-cover"
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{found.username}</p>
+                    <p className="truncate text-sm text-wb-muted">
+                      {found.firstname} {found.lastname}
+                    </p>
+                  </div>
+                </button>
+                {found.is_friend ? (
+                  <span className="wb-btn-secondary">Friends</span>
+                ) : found.friend_request_received ? (
+                  <span className="wb-btn-secondary">Responds</span>
+                ) : isRequestSent(found.id) || found.friend_request_sent ? (
+                  <button className="wb-btn-secondary" disabled>
+                    Requested
+                  </button>
+                ) : (
+                  <button
+                    className="wb-btn-primary"
+                    onClick={async () => {
+                      const created = await sendFriendRequest(found.id);
+                      setResults((current) =>
+                        current.map((item) =>
+                          String(item.id) === String(found.id)
+                            ? {
+                                ...item,
+                                friend_request_sent: true,
+                                friend_request_id: created ? String(created.id) : item.friend_request_id,
+                              }
+                            : item
+                        )
+                      );
+                    }}
+                  >
+                    Add friend
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </PageShell>
     </MainLayout>
   );
 };
 
-export default SearchPage; 
+export default SearchPage;

@@ -1,9 +1,9 @@
 export interface Profile {
-  id?: number;
+  id?: string;
   username: string;
   profile_picture: string;
   user: {
-    id: number;
+    id: string;
     firstname: string;
     lastname: string;
     email: string;
@@ -14,7 +14,7 @@ export interface Profile {
 }
 
 export interface User {
-  id: number;
+  id: string;
   username: string;
   firstname: string;
   lastname: string;
@@ -24,16 +24,16 @@ export interface User {
 }
 
 export interface Reaction {
-  id: number;
+  id: string;
   user: User;
-  message: number; 
+  message: string; 
   emoji: string;
   created_at: string;
 }
 
 export interface Message {
-  id: number;
-  conversation: number; // conversation ID
+  id: string;
+  conversation: string;
   sender: User;
   text?: string;
   image?: string; // URL to the image
@@ -45,14 +45,17 @@ export interface Message {
 }
 
 export interface Conversation {
-  id: number;
+  id: string;
   name?: string;
   is_group: boolean;
   participants: User[];
-  participant_ids?: number[]; // write-only for creation
+  participant_ids?: string[];
   messages: Message[];
   created_at: string;
   updated_at: string;
+  request_status?: "pending" | "accepted" | "declined";
+  requested_by?: string | null;
+  is_message_request?: boolean;
 }
 
 // Additional interfaces for frontend state management
@@ -68,20 +71,20 @@ export interface ChatState {
 
 // Payload types for API calls
 export interface CreateConversationPayload {
-  participants: number[];
+  participants: string[];
   name?: string;
   is_group?: boolean;
 }
 
 export interface SendMessagePayload {
-  conversationId: number;
+  conversationId: string;
   text?: string;
   image?: File | null;
   gif_url?: string;
 }
 
 export interface AddReactionPayload {
-  messageId: number;
+  messageId: string;
   emoji: string;
 }
 
@@ -94,8 +97,8 @@ export interface ChatContextType {
   createConversation: (payload: CreateConversationPayload) => Promise<void>;
   sendMessage: (payload: SendMessagePayload) => Promise<void>;
   addReaction: (payload: AddReactionPayload) => Promise<void>;
-  deleteMessage: (messageId: number) => Promise<void>;
-  deleteConversation: (conversationId: number) => Promise<void>;
-  setCurrentConversation: (conversationId: number | null) => void;
+  deleteMessage: (messageId: string) => Promise<void>;
+  deleteConversation: (conversationId: string) => Promise<void>;
+  setCurrentConversation: (conversationId: string | null) => void;
   fetchConversations: () => Promise<void>;
 }

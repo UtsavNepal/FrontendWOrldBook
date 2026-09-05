@@ -64,7 +64,7 @@ const handleAxiosError = (error: unknown): Error => {
     // Handle Axios-specific errors
     if (error.response) {
       return new Error(
-        `Request failed with status ${error.response.status}: ${error.response.data.message || error.message}`
+        `Request failed with status ${error.response.status}: ${(error.response.data as any)?.error || (error.response.data as any)?.message || error.message}`
       );
     } else if (error.request) {
       

@@ -64,8 +64,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     try {
       const response = await authRepository.login(email, password);
-      saveTokens(response.access, response.refresh);
+      const access = response.access || response.token || "";
+      const refresh = response.refresh || access;
+      saveTokens(access, refresh);
       setIsAuth(true);
+      if (response.user) {
+        setUser(response.user);
+      }
       fetchUserData();
       navigate("/welcome");
     } catch (error) {

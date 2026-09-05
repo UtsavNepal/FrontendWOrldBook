@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { profileRepository } from '../../infrastructure/repositories/ProfileRepository';
 import MainLayout from "../components/MainLayout";
+import PageShell from "../components/PageShell";
+import { getImageUrl } from "../../utils/getImageUrl";
 import { MoreVertical } from "lucide-react";
 
 interface NotificationsPageProps {
@@ -11,7 +13,7 @@ interface NotificationsPageProps {
 const NotificationsPage: React.FC<NotificationsPageProps> = ({ onRead }) => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const fetchNotifications = () => {
@@ -44,7 +46,7 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ onRead }) => {
     if (onRead) onRead();
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     await profileRepository.deleteNotification(id);
     fetchNotifications();
     if (onRead) onRead();
@@ -61,11 +63,8 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ onRead }) => {
   };
 
   useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (menuOpenId !== null) {
-        setMenuOpenId(null);
-        console.log(e);
-      }
+    const handleClick = () => {
+      if (menuOpenId !== null) setMenuOpenId(null);
     };
     if (menuOpenId !== null) {
       document.addEventListener('mousedown', handleClick);
@@ -75,70 +74,72 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ onRead }) => {
 
   return (
     <MainLayout>
-      <div className="flex justify-center items-start min-h-screen bg-gray-50">
-        <div className="w-full max-w-xl p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md mt-8 mx-auto flex-1 h-full">
-          <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100 text-center">Notifications</h2>
-          <div className="flex justify-end mb-4">
-            <button
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm font-semibold shadow"
-              onClick={handleMarkAllAsRead}
-              disabled={notifications.every(n => n.is_read)}
-            >
-              Mark all as read
-            </button>
-          </div>
-          {loading ? (
-            <div className="text-center text-gray-400 py-8">Loading...</div>
-          ) : notifications.length === 0 ? (
-            <div className="text-center text-gray-400 py-8">No notifications</div>
-          ) : (
-            <ul className="divide-y divide-gray-100">
-              {notifications.map((notif) => (
-                <li
-                  key={notif.id}
-                  className={`flex items-center gap-3 py-4 px-2 hover:bg-gray-50 cursor-pointer ${notif.is_read ? "opacity-70" : ""}`}
-                  onClick={() => handleNotificationClick(notif)}
-                >
-                  <img
-                    src={notif.actor?.profile_picture ? (notif.actor.profile_picture.startsWith('http') ? notif.actor.profile_picture : `${import.meta.env.VITE_BACKEND_URL}${notif.actor.profile_picture}`) : "/default-avatar.png"}
-                    alt={notif.actor?.username}
-                    className="w-12 h-12 rounded-full object-cover border border-gray-200"
-                  />
-                  <div className="flex-1">
-                    <span className="font-semibold text-gray-800 dark:text-gray-100">{notif.actor?.username}</span>
-                    <span className="text-gray-700 dark:text-gray-300 ml-1">{notif.message.replace(notif.actor?.username, "")}</span>
-                    <div className="text-xs text-gray-400 mt-1">{new Date(notif.timestamp).toLocaleString()}</div>
-                  </div>
-                  <div className="relative" onClick={e => e.stopPropagation()}>
-                    <button
-                      className="p-2 rounded-full hover:bg-gray-200"
-                      onClick={() => setMenuOpenId(menuOpenId === notif.id ? null : notif.id)}
-                    >
-                      <MoreVertical size={20} />
-                    </button>
-                    {menuOpenId === notif.id && (
-                      <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-900 border rounded-lg shadow-lg z-50">
-                        <button
-                          className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800"
-                          onClick={() => { handleMarkReadUnread(notif); setMenuOpenId(null); }}
-                        >
-                          {notif.is_read ? "Mark as unread" : "Mark as read"}
-                        </button>
-                        <button
-                          className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-red-500"
-                          onClick={() => { handleDelete(notif.id); setMenuOpenId(null); }}
-                        >
-                          Delete notification
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
+      <PageShell
+        title="Notifications"
+        action={
+          <button
+            className="wb-btn-secondary"
+            onClick={handleMarkAllAsRead}
+            disabled={notifications.length === 0 || notifications.every(n => n.is_read)}
+          >
+            Mark all as read
+          </button>
+        }
+      >
+        {loading ? (
+          <div className="wb-empty">Loading...</div>
+        ) : notifications.length === 0 ? (
+          <div className="wb-empty">You're all caught up.</div>
+        ) : (
+          <ul className="wb-card overflow-hidden">
+            {notifications.map((notif) => (
+              <li
+                key={notif.id}
+                className={`flex cursor-pointer items-center gap-3 border-b border-wb-line px-4 py-3 last:border-b-0 hover:bg-wb-canvas ${notif.is_read ? "opacity-70" : "bg-blue-50/50"}`}
+                onClick={() => handleNotificationClick(notif)}
+              >
+                <img
+                  src={getImageUrl(notif.actor?.profile_picture)}
+                  alt={notif.actor?.username}
+                  className="h-12 w-12 rounded-full object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm">
+                    <span className="font-semibold">{notif.actor?.username}</span>
+                    <span className="text-wb-ink"> {notif.message.replace(notif.actor?.username, "")}</span>
+                  </p>
+                  <p className="mt-1 text-xs text-wb-muted">{new Date(notif.timestamp).toLocaleString()}</p>
+                </div>
+                {!notif.is_read && <span className="h-2.5 w-2.5 rounded-full bg-wb-blue" />}
+                <div className="relative" onClick={e => e.stopPropagation()}>
+                  <button
+                    className="rounded-full p-2 hover:bg-white"
+                    onClick={() => setMenuOpenId(menuOpenId === notif.id ? null : notif.id)}
+                  >
+                    <MoreVertical size={18} className="text-wb-muted" />
+                  </button>
+                  {menuOpenId === notif.id && (
+                    <div className="absolute right-0 z-50 mt-1 w-44 overflow-hidden rounded-xl border border-wb-line bg-white shadow-card">
+                      <button
+                        className="block w-full px-4 py-2 text-left text-sm hover:bg-wb-canvas"
+                        onClick={() => { handleMarkReadUnread(notif); setMenuOpenId(null); }}
+                      >
+                        {notif.is_read ? "Mark as unread" : "Mark as read"}
+                      </button>
+                      <button
+                        className="block w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-wb-canvas"
+                        onClick={() => { handleDelete(notif.id); setMenuOpenId(null); }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </PageShell>
     </MainLayout>
   );
 };

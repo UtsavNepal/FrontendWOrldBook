@@ -7,7 +7,14 @@ import FullScreenPostModal from "../modal/FullScreenPostModal";
 import { useNavigate } from "react-router-dom";
 import Spinner from "../../ui/Spinner";
 import MainLayout from "../../components/MainLayout";
+import PageShell from "../../components/PageShell";
 import { getImageUrl } from '../../../utils/getImageUrl';
+import { MessageCircle } from "lucide-react";
+import LikeButton from "../../components/LikeButton";
+import PostStoryMedia from "../../components/PostStoryMedia";
+import { useConfirm } from "../../components/useConfirm";
+import OptionsMenu, { isOwnedBy } from "../../components/OptionsMenu";
+import { postStoryLine, visibilityLabel } from "../../../utils/postStory";
 
 
 
@@ -24,29 +31,27 @@ const PostFeedPage: React.FC = () => {
   } = usePostContext();
   const { isAuthenticated, user } = useAuth();
   const [editingPost, setEditingPost] = useState<Post | null>(null);
-  const [openCommentSectionId, setOpenCommentSectionId] = useState<number | null>(null);
+  const [openCommentSectionId, setOpenCommentSectionId] = useState<string | null>(null);
   const [newComment, setNewComment] = useState("");
-  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editedComment, setEditedComment] = useState("");
   const [comments, setComments] = useState<Comment[]>([]);
   const [fullScreenPost, setFullScreenPost] = useState<Post | null>(null);
-  const [openDropdownPostId, setOpenDropdownPostId] = useState<number | null>(null);
-  const [replyToCommentId, setReplyToCommentId] = useState<number | null>(null);
+  const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const { confirm, modal } = useConfirm();
 
-  const toggleDropdown = (postId: number) => {
-    setOpenDropdownPostId(openDropdownPostId === postId ? null : postId);
+  const handleDelete = async (id: string) => {
+    const ok = await confirm({
+      title: "Delete post",
+      message: "Are you sure you want to delete this post? This cannot be undone.",
+    });
+    if (ok) await deletePost(id);
   };
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm("Are you sure you want to delete this post?")) {
-      await deletePost(id);
-    }
-  };
-
-  const handleCommentSubmit = async (postId: number) => {
+  const handleCommentSubmit = async (postId: string) => {
     if (newComment.trim()) {
       await commentOnPost(postId, newComment);
       setNewComment("");
@@ -54,7 +59,7 @@ const PostFeedPage: React.FC = () => {
     }
   };
 
-  const handleReplySubmit = async (postId: number, parentId: number) => {
+  const handleReplySubmit = async (postId: string, parentId: string) => {
     if (replyText.trim()) {
       await commentOnPost(postId, replyText, parentId);
       setReplyText("");
@@ -63,7 +68,7 @@ const PostFeedPage: React.FC = () => {
     }
   };
 
-  const handleEditComment = async (commentId: number) => {
+  const handleEditComment = async (commentId: string) => {
     if (editedComment.trim()) {
       await updateComment(commentId, editedComment);
       setEditingCommentId(null);
@@ -74,16 +79,19 @@ const PostFeedPage: React.FC = () => {
     }
   };
 
-  const handleDeleteComment = async (commentId: number) => {
-    if (window.confirm("Are you sure you want to delete this comment?")) {
-      await deleteComment(commentId);
-      if (openCommentSectionId) {
-        fetchComments(openCommentSectionId);
-      }
+  const handleDeleteComment = async (commentId: string) => {
+    const ok = await confirm({
+      title: "Delete comment",
+      message: "Are you sure you want to delete this comment?",
+    });
+    if (!ok) return;
+    await deleteComment(commentId);
+    if (openCommentSectionId) {
+      fetchComments(openCommentSectionId);
     }
   };
 
-  const fetchComments = async (postId: number) => {
+  const fetchComments = async (postId: string) => {
     try {
       const comments = await getComments(postId);
       setComments(comments);
@@ -93,45 +101,45 @@ const PostFeedPage: React.FC = () => {
   };
 
   // Helper to render comments with only one level of replies
-  const renderComments = (commentsList: Comment[], postId: number, isReply = false) =>
+  const renderComments = (commentsList: Comment[], postId: string, isReply = false) =>
     [...commentsList].reverse().map((comment) => (
-      <div key={comment.id} className={`flex items-center justify-between mb-2 ${isReply ? 'ml-8' : 'ml-0'}`}>
-        <div className="flex items-center">
+      <div key={comment.id} className={`mb-3 flex items-start justify-between ${isReply ? "ml-10" : ""}`}>
+        <div className="flex items-start">
           <img
             src={getImageUrl(comment.profile.profile_picture)}
             alt={comment.profile.username}
-            className="w-8 h-8 rounded-full mr-2"
+            className="mr-2 h-7 w-7 shrink-0 rounded-full object-cover"
           />
-          <div>
-            <span className="font-bold">{comment.profile.username}</span>
+          <div className="rounded-2xl bg-wb-canvas px-3 py-2">
+            <span className="text-sm font-semibold">{comment.profile.username}</span>
             {editingCommentId === comment.id ? (
               <input
                 type="text"
                 value={editedComment}
                 onChange={(e) => setEditedComment(e.target.value)}
-                className="ml-2 p-1 border rounded"
+                className="wb-input mt-1"
               />
             ) : (
-              <p className="text-sm">{comment.comment}</p>
+              <p className="text-sm text-wb-ink">{comment.comment}</p>
             )}
             <button
               onClick={() => setReplyToCommentId(comment.id)}
-              className="text-blue-500 ml-2"
+              className="mt-1 text-xs font-semibold text-wb-muted hover:text-wb-blue"
             >
               Reply
             </button>
             {replyToCommentId === comment.id && (
-              <div className="flex items-center mt-2 ml-4">
+              <div className="mt-2 flex items-center gap-2">
                 <input
                   type="text"
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
                   placeholder="Write a reply..."
-                  className="flex-grow p-2 border rounded"
+                  className="wb-input"
                 />
                 <button
                   onClick={() => handleReplySubmit(postId, comment.id)}
-                  className="ml-2 bg-green-500 text-white px-4 py-2 rounded"
+                  className="wb-btn-primary"
                 >
                   Reply
                 </button>
@@ -145,32 +153,27 @@ const PostFeedPage: React.FC = () => {
             )}
           </div>
         </div>
-        <div className="flex space-x-2">
-          {editingCommentId === comment.id ? (
-            <button
-              onClick={() => handleEditComment(comment.id)}
-              className="text-green-500"
-            >
+        {editingCommentId === comment.id ? (
+          <div className="ml-2 flex shrink-0 gap-2">
+            <button onClick={() => handleEditComment(comment.id)} className="text-xs font-bold text-wb-blue">
               Save
             </button>
-          ) : (
             <button
-              onClick={() => {
-                setEditingCommentId(comment.id);
-                setEditedComment(comment.comment);
-              }}
-              className="text-blue-500"
+              onClick={() => { setEditingCommentId(null); setEditedComment(""); }}
+              className="text-xs font-bold text-wb-muted"
             >
-              Edit
+              Cancel
             </button>
-          )}
-          <button
-            onClick={() => handleDeleteComment(comment.id)}
-            className="text-red-500"
-          >
-            Delete
-          </button>
-        </div>
+          </div>
+        ) : isOwnedBy(comment.profile?.user?.id, user?.id) ? (
+          <OptionsMenu
+            onEdit={() => {
+              setEditingCommentId(comment.id);
+              setEditedComment(comment.comment);
+            }}
+            onDelete={() => handleDeleteComment(comment.id)}
+          />
+        ) : null}
       </div>
     ));
 
@@ -191,115 +194,92 @@ const PostFeedPage: React.FC = () => {
 
   return (
     <MainLayout>
-      <div className="flex justify-center p-4 min-h-screen bg-gray-50">
-        <div className="w-full max-w-4xl flex-1 h-full">
-          <h1 className="text-2xl font-bold mb-4">Feed</h1>
-          {loading ? (
-            <Spinner />
-          ) : (
-            posts.map((post) => (
-              <div key={post.id} className="border p-4 mb-4 rounded">
-                <div className="flex items-center mb-2">
-                  <img
-                    src={getImageUrl(post.profile.profile_picture)}
-                    alt={post.profile.username}
-                    className="w-10 h-10 rounded-full mr-2"
-                  />
-                  <span className="font-bold">{post.profile.username}</span>
-                  {user && post.profile?.user?.id === user.id && (
-                    <div className="ml-auto relative">
-                      <button
-                        onClick={() => toggleDropdown(post.id)}
-                        className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                      >
-                        ⋮
-                      </button>
-                      {openDropdownPostId === post.id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 border rounded-lg shadow-lg">
-                          <button
-                            onClick={() => {
-                              setEditingPost(post);
-                              setOpenDropdownPostId(null);
-                            }}
-                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => {
-                              handleDelete(post.id);
-                              setOpenDropdownPostId(null);
-                            }}
-                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-red-500"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-                {post.content && (
-                  <p
-                    className="mb-2 cursor-pointer hover:underline"
-                    onClick={() => navigate(`/post/${post.id}`)}
-                  >
-                    {post.content}
+      {modal}
+      <PageShell>
+        <button
+          onClick={() => navigate("/create-post")}
+          className="wb-card mb-4 flex w-full items-center gap-3 px-4 py-3 text-left"
+        >
+          <img src={getImageUrl(user?.profile_picture)} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+          <span className="flex-1 rounded-full bg-wb-canvas px-4 py-2.5 text-sm text-wb-muted">
+            What's on your mind, {user?.firstname || "there"}?
+          </span>
+        </button>
+        {loading ? (
+          <Spinner />
+        ) : posts.length === 0 ? (
+          <div className="wb-empty">No posts yet. Create the first one.</div>
+        ) : (
+          posts.map((post) => (
+            <article key={post.id} className="wb-card mb-4 overflow-hidden">
+              <div className="flex items-center px-4 py-3">
+                <img
+                  src={getImageUrl(post.profile.profile_picture)}
+                  alt={post.profile.username}
+                  className="mr-3 h-9 w-9 shrink-0 cursor-pointer rounded-full object-cover"
+                  onClick={() => navigate(`/profile/${post.profile.user?.id || post.profile.username}`)}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm">
+                    <span className="font-semibold">{post.profile.username}</span>
+                    {postStoryLine(post) && <span className="font-normal"> {postStoryLine(post)}</span>}
                   </p>
-                )}
-                {post.image && (
-                  <img
-                    src={getImageUrl(post.image)}
-                    alt="Post"
-                    className="w-[960px] h-[336px] object-cover rounded cursor-pointer"
-                    onClick={() => navigate(`/post/${post.id}`)}
-                  />
-                )}
-                <div className="flex space-x-4 mt-2">
-                  <button onClick={() => likepost(post.id)} className="flex items-center">
-                    <span>👍</span>
-                    <span>{post.likes}</span>
-                  </button>
-                  <button
-                    onClick={() => setOpenCommentSectionId(post.id === openCommentSectionId ? null : post.id)}
-                    className="flex items-center"
-                  >
-                    <span>💬</span>
-                    <span>{post.comments.length} comments</span>
-                  </button>
+                  <p className="text-xs text-wb-muted">{visibilityLabel(post.visibility)}</p>
                 </div>
-                {openCommentSectionId === post.id && (
-                  <div className="mt-4">
-                    <div className="flex items-center mb-4">
-                      <input
-                        type="text"
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        placeholder="Write a comment..."
-                        className="flex-grow p-2 border rounded"
-                      />
-                      <button
-                        onClick={() => handleCommentSubmit(post.id)}
-                        className="ml-2 bg-blue-500 text-white px-4 py-2 rounded"
-                      >
-                        Post
-                      </button>
-                    </div>
-                    {/* Only render top-level comments at the root (no parent) */}
-                    {renderComments(comments, post.id)}
-                  </div>
+                {isOwnedBy(post.profile?.user?.id, user?.id) && (
+                  <OptionsMenu
+                    onEdit={() => setEditingPost(post)}
+                    onDelete={() => handleDelete(post.id)}
+                  />
                 )}
               </div>
-            ))
-          )}
-          {editingPost && (
-            <EditPostModal post={editingPost} onClose={() => setEditingPost(null)} />
-          )}
-          {fullScreenPost && (
-            <FullScreenPostModal post={fullScreenPost} onClose={() => setFullScreenPost(null)} />
-          )}
-        </div>
-      </div>
+              {post.content && (
+                <p className="cursor-pointer px-4 pb-3 text-[15px]" onClick={() => navigate(`/post/${post.id}`)}>
+                  {post.content}
+                </p>
+              )}
+              <PostStoryMedia post={post} onImageClick={() => navigate(`/post/${post.id}`)} />
+              <div className="flex border-t border-wb-line px-2 py-1">
+                <LikeButton
+                  liked={post.is_liked}
+                  count={post.likes || 0}
+                  onClick={() => likepost(post.id)}
+                />
+                <button
+                  onClick={() => setOpenCommentSectionId(post.id === openCommentSectionId ? null : post.id)}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold text-wb-muted hover:bg-wb-canvas"
+                >
+                  <MessageCircle size={18} />
+                  {post.comments?.length || 0} Comment
+                </button>
+              </div>
+              {openCommentSectionId === post.id && (
+                <div className="border-t border-wb-line px-4 py-3">
+                  <div className="mb-3 flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Write a comment..."
+                      className="wb-input"
+                    />
+                    <button onClick={() => handleCommentSubmit(post.id)} className="wb-btn-primary">
+                      Post
+                    </button>
+                  </div>
+                  {renderComments(comments, post.id)}
+                </div>
+              )}
+            </article>
+          ))
+        )}
+        {editingPost && (
+          <EditPostModal post={editingPost} onClose={() => setEditingPost(null)} />
+        )}
+        {fullScreenPost && (
+          <FullScreenPostModal post={fullScreenPost} onClose={() => setFullScreenPost(null)} />
+        )}
+      </PageShell>
     </MainLayout>
   );
 };

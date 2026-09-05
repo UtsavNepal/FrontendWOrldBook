@@ -5,14 +5,14 @@ import { useAuth } from "./AuthContext";
 
 interface PostContextType {
   posts: Post[];
-  createPost: (content: string, image?: File, visibility?: string) => Promise<void>;
-  updatePost: (id: number, content: string, image?: File, visibility?: string) => Promise<void>;
-  deletePost: (id: number) => Promise<void>;
-  likepost: (id: number) => Promise<void>;
-  getComments: (postId: number) => Promise<Comment[]>;
-  commentOnPost: (id: number, comment: string, parent?: number) => Promise<void>;
-  updateComment: (commentId: number, comment: string) => Promise<void>;
-  deleteComment: (commentId: number) => Promise<void>;
+  createPost: (content: string, images?: File[], visibility?: string) => Promise<void>;
+  updatePost: (id: string, content: string, images?: File[], visibility?: string, keepImages?: string[]) => Promise<void>;
+  deletePost: (id: string) => Promise<void>;
+  likepost: (id: string) => Promise<void>;
+  getComments: (postId: string) => Promise<Comment[]>;
+  commentOnPost: (id: string, comment: string, parent?: string) => Promise<void>;
+  updateComment: (commentId: string, comment: string) => Promise<void>;
+  deleteComment: (commentId: string) => Promise<void>;
   fetchPosts: () => Promise<void>;
 }
 
@@ -21,7 +21,6 @@ const PostContext = createContext<PostContextType | undefined>(undefined);
 
 export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [posts, setPosts] = useState<Post[]>([]);
-  const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
   const postRepository = new PostRepository();
   const { isAuthenticated } = useAuth();
 
@@ -34,7 +33,7 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const getComments = async (postId: number): Promise<Comment[]> => {
+  const getComments = async (postId: string): Promise<Comment[]> => {
     try {
       return await postRepository.getComments(postId);
     } catch (error) {
@@ -43,13 +42,11 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const createPost = async (content: string, image?: File, visibility: string = "public") => {
+  const createPost = async (content: string, images: File[] = [], visibility: string = "public") => {
     const formData = new FormData();
     formData.append("content", content);
     formData.append("visibility", visibility);
-    if (image) {
-      formData.append("image", image);
-    }
+    images.forEach((image) => formData.append("images", image));
 
     try {
       const newPost = await postRepository.createPost(formData);
@@ -59,13 +56,12 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updatePost = async (id: number, content: string, image?: File, visibility: string = "public") => {
+  const updatePost = async (id: string, content: string, images: File[] = [], visibility: string = "public", keepImages: string[] = []) => {
     const formData = new FormData();
     formData.append("content", content);
     formData.append("visibility", visibility);
-    if (image) {
-      formData.append("image", image);
-    }
+    formData.append("keep_images", JSON.stringify(keepImages));
+    images.forEach((image) => formData.append("images", image));
 
     try {
       const updatedPost = await postRepository.updatePost(id, formData);
@@ -77,7 +73,7 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const deletePost = async (id: number) => {
+  const deletePost = async (id: string) => {
     try {
       await postRepository.deletePost(id);
       setPosts((prevPosts) => prevPosts.filter((post) => post.id !== id));
@@ -86,29 +82,16 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const likepost = async (id: number) => {
+  const likepost = async (id: string) => {
     try {
-      const isLiked = likedPosts.has(id); // Check if the post is already liked
-      await postRepository.toggleLikePost(id);
-
+      const updated = await postRepository.toggleLikePost(id);
       setPosts((prevPosts) =>
         prevPosts.map((post) =>
           post.id === id
-            ? { ...post, likes: isLiked ? post.likes - 1 : post.likes + 1 }
+            ? { ...post, likes: updated.likes, is_liked: updated.is_liked }
             : post
         )
       );
-
-      // Update the likedPosts set
-      if (isLiked) {
-        setLikedPosts((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(id);
-          return newSet;
-        });
-      } else {
-        setLikedPosts((prev) => new Set(prev).add(id));
-      }
     } catch (error) {
       console.error("Error liking post:", error);
     }
@@ -116,7 +99,7 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   
 
-  const commentOnPost = async (id: number, comment: string, parent?: number) => {
+  const commentOnPost = async (id: string, comment: string, parent?: string) => {
     try {
       const newComment = await postRepository.commentOnPost(id, comment, parent);
       setPosts((prevPosts) =>
@@ -131,7 +114,7 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateComment = async (commentId: number, comment: string) => {
+  const updateComment = async (commentId: string, comment: string) => {
     try {
       const updatedComment = await postRepository.updateComment(commentId, comment);
       setPosts((prevPosts) =>
@@ -147,7 +130,7 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const deleteComment = async (commentId: number) => {
+  const deleteComment = async (commentId: string) => {
     try {
       await postRepository.deleteComment(commentId);
       setPosts((prevPosts) =>

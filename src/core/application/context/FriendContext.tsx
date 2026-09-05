@@ -3,18 +3,22 @@ import { FriendRepository } from "../../../infrastructure/repositories/FriendRep
 import { FriendRequest } from "../../domain/entities/Friend.entity";
 import { Profile } from "../../domain/entities/Profile.entity";
 import { useAuth } from "./AuthContext";
+import { refersTo } from "../../../utils/friendStatus";
 
 interface FriendContextType {
   friendRequests: FriendRequest[];
+  sentRequests: FriendRequest[];
   otherUsers: Profile[];
-  acceptFriendRequest: (requestId: number) => Promise<void>;
-  rejectFriendRequest: (requestId: number) => Promise<void>;
-  sendFriendRequest: (toUserId: number) => Promise<void>;
-  isRequestSent: (userId: number) => boolean;
-  isRequestReceived: (userId: number) => boolean;
+  acceptFriendRequest: (requestId: string) => Promise<void>;
+  rejectFriendRequest: (requestId: string) => Promise<void>;
+  sendFriendRequest: (toUserId: string) => Promise<FriendRequest | void>;
+  cancelFriendRequest: (requestId: string) => Promise<void>;
+  isRequestSent: (userId: string) => boolean;
+  isRequestReceived: (userId: string) => boolean;
   getFriendRequests: () => Promise<void>;
+  getSentFriendRequests: () => Promise<void>;
   fetchOtherUsersProfiles: () => Promise<void>;
-  unfriend: (userId: number) => Promise<void>;
+  unfriend: (userId: string) => Promise<void>;
 }
 
 interface FriendProviderProps {
@@ -25,6 +29,7 @@ const FriendContext = createContext<FriendContextType | undefined>(undefined);
 
 export const FriendProvider: React.FC<FriendProviderProps> = ({ children }) => {
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
+  const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
   const [otherUsers, setOtherUsers] = useState<Profile[]>([]);
   const friendRepository = new FriendRepository();
   const { user } = useAuth();
@@ -34,58 +39,72 @@ export const FriendProvider: React.FC<FriendProviderProps> = ({ children }) => {
     setFriendRequests(requests);
   };
 
+  const getSentFriendRequests = async () => {
+    const requests = await friendRepository.listSentFriendRequests();
+    setSentRequests(requests);
+  };
+
   const fetchOtherUsersProfiles = async () => {
     const users = await friendRepository.getOtherUsersProfiles();
     setOtherUsers(users);
   };
 
-  const acceptFriendRequest = async (requestId: number) => {
+  const acceptFriendRequest = async (requestId: string) => {
     await friendRepository.acceptFriendRequest(requestId);
     setFriendRequests((prev) => prev.filter((req) => req.id !== requestId));
   };
 
-  const rejectFriendRequest = async (requestId: number) => {
+  const rejectFriendRequest = async (requestId: string) => {
     await friendRepository.rejectFriendRequest(requestId);
     setFriendRequests((prev) => prev.filter((req) => req.id !== requestId));
   };
 
-  const sendFriendRequest = async (toUserId: number) => {
-    await friendRepository.sendFriendRequest(toUserId);
-    // Fetch the real friend requests from the backend
-    await getFriendRequests();
+  const sendFriendRequest = async (toUserId: string) => {
+    const created = await friendRepository.sendFriendRequest(toUserId);
+    setSentRequests((prev) =>
+      prev.some((request) => String(request.id) === String(created.id))
+        ? prev
+        : [...prev, created]
+    );
+    return created;
   };
 
-  const unfriend = async (userId: number) => {
+  const cancelFriendRequest = async (requestId: string) => {
+    setSentRequests((prev) => prev.filter((request) => String(request.id) !== String(requestId)));
+    try {
+      await friendRepository.cancelFriendRequest(requestId);
+    } catch (error) {
+      await getSentFriendRequests();
+      throw error;
+    }
+  };
+
+  const unfriend = async (userId: string) => {
     await friendRepository.unfriend(userId);
   };
 
-  // Check if a request has been sent to a specific user
-  const isRequestSent = (userId: number): boolean => {
-    if (!user) return false;
-    return friendRequests.some(
-      (request) => request.from_user.id === user.id && request.to_user.id === userId
-    );
+  const isRequestSent = (userId: string): boolean => {
+    return sentRequests.some((request) => refersTo(request.to_user, userId));
   };
 
-  // Check if a request has been received from a specific user
-  const isRequestReceived = (userId: number): boolean => {
-    if (!user) return false;
-    return friendRequests.some(
-      (request) => request.to_user.id === user.id && request.from_user.id === userId
-    );
+  const isRequestReceived = (userId: string): boolean => {
+    return friendRequests.some((request) => refersTo(request.from_user, userId));
   };
 
   return (
     <FriendContext.Provider
       value={{
         friendRequests,
+        sentRequests,
         otherUsers,
         acceptFriendRequest,
         rejectFriendRequest,
         sendFriendRequest,
+        cancelFriendRequest,
         isRequestSent,
         isRequestReceived,
         getFriendRequests,
+        getSentFriendRequests,
         fetchOtherUsersProfiles,
         unfriend
       }}

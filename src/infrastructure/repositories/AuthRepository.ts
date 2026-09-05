@@ -1,10 +1,12 @@
-// AuthRepository.ts
 import { BaseRepository } from "../base/BaseRepository";
 import { User } from "../../core/domain/entities/User.entity";
+import { api } from "../../config/api";
 
 export interface LoginResponse {
   access: string;
   refresh: string;
+  token?: string;
+  user?: any;
 }
 
 export interface SignupResponse {
@@ -12,7 +14,8 @@ export interface SignupResponse {
 }
 
 export interface VerifyOTPResponse {
-  message: string;
+  message?: string;
+  success?: boolean;
 }
 
 export interface CompleteRegistrationResponse {
@@ -32,75 +35,67 @@ export interface ResetPasswordResponse {
 }
 
 export interface UserProfileResponse {
+  id: string;
   email: string;
   firstname: string;
   lastname: string;
   birthday: string;
   gender: string;
+  profile_picture?: string;
+  profile_id?: string;
 }
 
 export class AuthRepository extends BaseRepository<any> {
   constructor() {
-    super("/api/"); // Base URL for authentication endpoints
+    super("");
   }
+
   async getUsers(): Promise<User[]> {
-    return this.get<User[]>('users');
+    return this.get<User[]>(api.users.list());
   }
 
-
-  // Signup: Send OTP to the user's email
   async signup(email: string): Promise<SignupResponse> {
-    return this.post<SignupResponse>("auth/signup/", { email });
+    return this.post<SignupResponse>(api.auth.signupStart(), { email });
   }
 
-  // Verify OTP: Validate the OTP sent to the user's email
   async verifyOTP(email: string, otp: string): Promise<VerifyOTPResponse> {
-    return this.post<VerifyOTPResponse>("auth/verify-otp/", { email, otp });
+    return this.post<VerifyOTPResponse>(api.auth.verifyOtp(), { email, otp });
   }
 
-  // Complete Registration: Submit user details after OTP verification
   async completeRegistration(userData: User): Promise<CompleteRegistrationResponse> {
-    return this.post<CompleteRegistrationResponse>("auth/complete-registration/", userData);
+    return this.post<CompleteRegistrationResponse>(api.auth.completeRegistration(), userData);
   }
 
-  // Login: Authenticate the user and return access/refresh tokens
   async login(email: string, password: string): Promise<LoginResponse> {
-    return this.post<LoginResponse>("auth/login/", { email, password });
+    return this.post<LoginResponse>(api.auth.login(), { email, password });
   }
 
-  // Request Password Reset: Send OTP to reset the password
   async requestPasswordReset(email: string): Promise<RequestPasswordResetResponse> {
-    return this.post<RequestPasswordResetResponse>("auth/request-password-reset/", { email });
+    return this.post<RequestPasswordResetResponse>(api.auth.requestPasswordReset(), { email });
   }
 
-  // Verify Reset OTP: Validate the OTP for password reset
   async verifyResetOTP(email: string, otp: string): Promise<VerifyResetOTPResponse> {
-    return this.post<VerifyResetOTPResponse>("auth/verify-reset-otp/", { email, otp });
+    return this.post<VerifyResetOTPResponse>(api.auth.verifyResetOtp(), { email, otp });
   }
 
-  // Reset Password: Update the user's password after OTP verification
   async resetPassword(email: string, newPassword: string): Promise<ResetPasswordResponse> {
-    return this.post<ResetPasswordResponse>("auth/reset-password/", {
+    return this.post<ResetPasswordResponse>(api.auth.resetPassword(), {
       email,
       new_password: newPassword,
     });
   }
 
-  // Get User Profile: Fetch the logged-in user's profile data
   async getUserProfile(): Promise<UserProfileResponse> {
-    return this.get<UserProfileResponse>("user/");
+    return this.get<UserProfileResponse>(api.auth.me());
   }
 
-  
   async changePassword(oldPassword: string, newPassword: string, confirmPassword: string): Promise<{ message: string }> {
-    return this.post<{ message: string }>("auth/change-password/", {
+    return this.post<{ message: string }>(api.auth.changePassword(), {
       old_password: oldPassword,
       new_password: newPassword,
       confirm_password: confirmPassword,
     });
   }
 }
-
-
 
 export const authRepository = new AuthRepository();

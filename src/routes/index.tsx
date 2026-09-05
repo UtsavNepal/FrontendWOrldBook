@@ -17,19 +17,18 @@ export const AppRoutes = () => {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
-      <Route path="/profile/:id" element={<UserProfilePage />} />
-      <Route path="*" element={<Navigate to="/login" replace />} /> 
-      {/* Protected Routes */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/friends" element={<FriendPage />} />
         <Route path="/feed" element={<PostFeedPage />} />
         <Route path="/create-post" element={<CreatePostPage />} />
+        <Route path="/profile/:id" element={<UserProfilePage />} />
+        <Route path="/chat" element={<ChatPage />} />
+        <Route path="/search" element={<SearchPage />} />
+        <Route path="/post/:id" element={<ViewPostPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
       </Route>
-      <Route path="/chat" element={<ChatPage />} />
-      <Route path="/search" element={<SearchPage />} />
-      <Route path="/post/:id" element={<ViewPostPage />} />
-      <Route path="/notifications" element={<NotificationsPage />} />
     </Routes>
   );
 };
