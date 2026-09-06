@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { authRepository } from "../../../infrastructure/repositories/AuthRepository";
 import { saveTokens, clearTokens, isAuthenticated } from "../../../utils/tokenUtils";
 import { profileRepository } from "../../../infrastructure/repositories/ProfileRepository";
+import { ERRORS } from "../../../constants/errors";
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -25,7 +26,7 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error(ERRORS.auth.providerRequired);
   }
   return context;
 };

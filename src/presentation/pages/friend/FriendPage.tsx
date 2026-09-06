@@ -8,6 +8,7 @@ import { SpinnerOverlay } from "../../ui/Spinner";
 import MainLayout from "../../components/MainLayout";
 import PageShell from "../../components/PageShell";
 import { getImageUrl } from '../../../utils/getImageUrl';
+import { ERRORS } from "../../../constants/errors";
 
 const FriendPage: React.FC = () => {
   const {
@@ -48,14 +49,14 @@ const FriendPage: React.FC = () => {
             setSentRequests(sent);
             setFriendsLoading(false);
           } catch (err) {
-            setFetchError("You are not authorized. Please log in again.");
+            setFetchError(ERRORS.auth.unauthorized);
             setFriendsLoading(false);
           }
         } else {
           setFriendsLoading(false);
         }
       } catch (error) {
-        setFetchError("Failed to fetch friends list.");
+        setFetchError(ERRORS.friend.fetchFailed);
         setFriendsLoading(false);
       } finally {
         setIsLoading(false);

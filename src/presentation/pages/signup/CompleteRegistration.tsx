@@ -2,6 +2,7 @@ import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../../core/application/context/AuthContext";
 import { userRepository } from "../../../infrastructure/repositories/userRepository";
+import { ERRORS } from "../../../constants/errors";
 
 const CompleteRegistration: React.FC<{ setStep: (step: "signup" | "verify" | "complete") => void }> = () => {
   const navigate = useNavigate();
@@ -16,17 +17,17 @@ const CompleteRegistration: React.FC<{ setStep: (step: "signup" | "verify" | "co
     setError(null);
 
     if (!password) {
-      setError("Password is required.");
+      setError(ERRORS.signup.passwordRequired);
       setLoading(false);
       return;
     }
     if (password.length < 6) {
-      setError("Password must be at least 6 characters long.");
+      setError(ERRORS.signup.passwordTooShort);
       setLoading(false);
       return;
     }
     if (!email) {
-      setError("Missing email. Please start signup again.");
+      setError(ERRORS.signup.missingEmail);
       setLoading(false);
       return;
     }
@@ -35,7 +36,7 @@ const CompleteRegistration: React.FC<{ setStep: (step: "signup" | "verify" | "co
       await userRepository.completeRegistration(email, { password });
       navigate("/login");
     } catch (err: any) {
-      setError(err.response?.data?.error || err.message || "Registration failed.");
+      setError(err.response?.data?.error || err.message || ERRORS.signup.registrationFailed);
     } finally {
       setLoading(false);
     }

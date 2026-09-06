@@ -1,6 +1,7 @@
 import { BaseRepository } from "../base/BaseRepository";
 import { Profile } from "../../core/domain/entities/Profile.entity";
 import { api } from "../../config/api";
+import { ERRORS } from "../../constants/errors";
 
 export interface ProfileResponse {
   id: string;
@@ -46,7 +47,7 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
   async getProfile(): Promise<Profile> {
     const response = await this.get<ProfileResponse>(api.profile.me());
     if (!response || !response.user) {
-      throw new Error("Invalid profile data received from the server");
+      throw new Error(ERRORS.response.invalidProfile);
     }
     return toProfile(response);
   }
@@ -54,7 +55,7 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
   async updateProfile(updatedData: Partial<Profile>): Promise<Profile> {
     const response = await this.patch<ProfileResponse>(api.profile.root(), updatedData);
     if (!response || !response.user) {
-      throw new Error("Invalid profile data received from the server");
+      throw new Error(ERRORS.response.invalidProfile);
     }
     return toProfile(response);
   }
@@ -66,7 +67,7 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
       headers: { "Content-Type": "multipart/form-data" },
     });
     if (!response || !response.user) {
-      throw new Error("Invalid profile data received from the server");
+      throw new Error(ERRORS.response.invalidProfile);
     }
     return toProfile(response);
   }
@@ -78,7 +79,7 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
       headers: { "Content-Type": "multipart/form-data" },
     });
     if (!response || !response.user) {
-      throw new Error("Invalid profile data received from the server");
+      throw new Error(ERRORS.response.invalidProfile);
     }
     return toProfile(response);
   }
@@ -118,7 +119,7 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
   async removeProfilePicture(): Promise<Profile> {
     const response = await this.patch<ProfileResponse>(api.profile.root(), { profile_picture: null });
     if (!response || !response.user) {
-      throw new Error("Invalid profile data received from the server");
+      throw new Error(ERRORS.response.invalidProfile);
     }
     return toProfile(response);
   }
@@ -126,7 +127,7 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
   async removeCoverPhoto(): Promise<Profile> {
     const response = await this.patch<ProfileResponse>(api.profile.root(), { cover_photo: null });
     if (!response || !response.user) {
-      throw new Error("Invalid profile data received from the server");
+      throw new Error(ERRORS.response.invalidProfile);
     }
     return toProfile(response);
   }

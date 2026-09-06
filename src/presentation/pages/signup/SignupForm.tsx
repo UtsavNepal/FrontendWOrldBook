@@ -2,6 +2,7 @@ import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../../core/application/context/AuthContext";
 import { userRepository } from "../../../infrastructure/repositories/userRepository";
+import { ERRORS } from "../../../constants/errors";
 
 const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") => void }> = ({ setStep }) => {
   const navigate = useNavigate();
@@ -29,18 +30,18 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
     if (!formData.firstname.trim()) {
-      newErrors.firstname = "First name is required";
+      newErrors.firstname = ERRORS.signup.firstNameRequired;
     }
     if (!formData.lastname.trim()) {
-      newErrors.lastname = "Last name is required";
+      newErrors.lastname = ERRORS.signup.lastNameRequired;
     }
     if (!formData.birthday) {
-      newErrors.birthday = "Birthday is required";
+      newErrors.birthday = ERRORS.signup.birthdayRequired;
     }
     if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
+      newErrors.email = ERRORS.signup.emailRequired;
     } else if (!isValidEmail(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
+      newErrors.email = ERRORS.signup.emailInvalid;
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -63,9 +64,11 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
 
     try {
       const response = await userRepository.signup(formData);
-      if (response.message) {
+      if (response?.message || response?.success) {
         setEmail(formData.email);
         setStep("verify");
+      } else {
+        setErrors({ general: response?.error || ERRORS.signup.failed });
       }
     } catch (error: any) {
       const data = error.response?.data;
@@ -91,7 +94,7 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
         }
         setErrors(fieldErrors);
       } else {
-        setErrors({ general: error.message || "Signup failed. Please try again." });
+        setErrors({ general: error.message || ERRORS.signup.failed });
       }
     } finally {
       setLoading(false);

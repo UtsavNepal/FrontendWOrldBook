@@ -1,6 +1,7 @@
 import { createContext, useContext, ReactNode, useState, useEffect } from "react";
 import { Profile } from "../../domain/entities/Profile.entity";
 import { ProfileRepository } from "../../../infrastructure/repositories/ProfileRepository";
+import { ERRORS } from "../../../constants/errors";
 
 
 interface ProfileContextType {
@@ -21,7 +22,7 @@ const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 export const useProfile = () => {
   const context = useContext(ProfileContext);
   if (!context) {
-    throw new Error("useProfile must be used within a ProfileProvider");
+    throw new Error(ERRORS.profile.providerRequired);
   }
   return context;
 };

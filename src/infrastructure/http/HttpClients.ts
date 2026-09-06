@@ -1,5 +1,6 @@
 import { axiosInstance } from "../../utils/axiosinstance";
 import { AxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
+import { ERRORS } from "../../constants/errors";
 
 
 
@@ -64,17 +65,19 @@ const handleAxiosError = (error: unknown): Error => {
     // Handle Axios-specific errors
     if (error.response) {
       return new Error(
-        `Request failed with status ${error.response.status}: ${(error.response.data as any)?.error || (error.response.data as any)?.message || error.message}`
+        ERRORS.server.requestFailed(
+          error.response.status,
+          (error.response.data as { error?: string; message?: string } | undefined)?.error
+            || (error.response.data as { error?: string; message?: string } | undefined)?.message
+            || error.message
+        )
       );
     } else if (error.request) {
-      
-      return new Error("No response received from the server");
+      return new Error(ERRORS.server.noResponse);
     } else {
-
-      return new Error(`Request setup error: ${error.message}`);
+      return new Error(ERRORS.server.requestSetup(error.message));
     }
   } else {
- 
-    return new Error("An unexpected error occurred");
+    return new Error(ERRORS.server.unexpected);
   }
 };

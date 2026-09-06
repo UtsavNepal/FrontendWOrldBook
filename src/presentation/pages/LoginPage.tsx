@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../core/application/context/AuthContext";
 import { Modal } from "./modal/modal";
 import { ResetPasswordForm } from "./ResetPasswordPage";
+import { ERRORS } from "../../constants/errors";
 
 export const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -46,7 +47,7 @@ export const LoginPage = () => {
       
       navigate("/feed"); 
     } catch (error) {
-      setError("Invalid email or password. Please try again."); 
+      setError(ERRORS.login.invalidCredentials); 
     } finally {
       setLoading(false); // Reset loading state
     }

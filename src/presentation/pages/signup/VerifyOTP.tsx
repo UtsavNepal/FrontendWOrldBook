@@ -1,6 +1,7 @@
 import { useState, useContext } from "react";
 import { AuthContext } from "../../../core/application/context/AuthContext";
 import { userRepository } from "../../../infrastructure/repositories/userRepository";
+import { ERRORS } from "../../../constants/errors";
 
 const VerifyOTP: React.FC<{ setStep: (step: "signup" | "verify" | "complete") => void }> = ({ setStep }) => {
   const { email } = useContext(AuthContext)!;
@@ -12,7 +13,7 @@ const VerifyOTP: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =>
       await userRepository.verifyOtp(email, otp);
       setStep("complete"); 
     } catch (error: any) {
-      alert(error.message || "OTP verification failed.");
+      alert(error.message || ERRORS.signup.otpFailed);
     }
   };
 

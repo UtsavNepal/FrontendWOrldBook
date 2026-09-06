@@ -4,6 +4,7 @@ import { FriendRequest } from "../../domain/entities/Friend.entity";
 import { Profile } from "../../domain/entities/Profile.entity";
 import { useAuth } from "./AuthContext";
 import { refersTo } from "../../../utils/friendStatus";
+import { ERRORS } from "../../../constants/errors";
 
 interface FriendContextType {
   friendRequests: FriendRequest[];
@@ -117,7 +118,7 @@ export const FriendProvider: React.FC<FriendProviderProps> = ({ children }) => {
 export const useFriendContext = () => {
   const context = useContext(FriendContext);
   if (!context) {
-    throw new Error("useFriendContext must be used within a FriendProvider");
+    throw new Error(ERRORS.friend.providerRequired);
   }
   return context;
 };

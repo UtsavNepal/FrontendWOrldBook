@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { PostRepository } from "../../../infrastructure/repositories/PostRepository";
 import { Post, Comment } from "../../../core/domain/entities/Post";
 import { useAuth } from "./AuthContext";
+import { ERRORS } from "../../../constants/errors";
 
 interface PostContextType {
   posts: Post[];
@@ -173,7 +174,7 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const usePostContext = () => {
   const context = useContext(PostContext);
   if (!context) {
-    throw new Error("usePostContext must be used within a PostProvider");
+    throw new Error(ERRORS.postContext.providerRequired);
   }
   return context;
 };

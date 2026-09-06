@@ -11,6 +11,7 @@ import { usePostContext } from "../../../core/application/context/PostContext";
 
 
 import { profileRepository } from '../../../infrastructure/repositories/ProfileRepository';
+import { ERRORS } from "../../../constants/errors";
 import FullScreenPostModal from "../modal/FullScreenPostModal";
 import EditPostModal from "../modal/EditPostModal";
 import { Post } from "../../../core/domain/entities/Post";
@@ -135,7 +136,7 @@ export const WelcomePage = () => {
       setConfirmPassword("");
       setShowPasswordModal(false);
     } catch (err: any) {
-      setPasswordError(err?.response?.data?.error || "Failed to change password");
+      setPasswordError(err?.response?.data?.error || ERRORS.auth.changePasswordFailed);
     }
   };
 

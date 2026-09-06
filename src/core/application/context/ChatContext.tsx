@@ -11,6 +11,7 @@ import {
 } from "../../domain/entities/Chat.entity";
 import { censorText } from "../../../utils/censorText";
 import { useAuth } from "./AuthContext";
+import { ERRORS } from "../../../constants/errors";
 
 interface ChatContextType extends ChatState {
   isChatOpen: boolean;
@@ -37,7 +38,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 export const useChatContext = () => {
   const context = useContext(ChatContext);
   if (!context) {
-    throw new Error("useChatContext must be used within a ChatProvider");
+    throw new Error(ERRORS.chat.providerRequired);
   }
   return context;
 };
@@ -70,7 +71,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       setState(prev => ({
         ...prev,
         loading: false,
-        error: "Failed to fetch conversations"
+        error: ERRORS.chat.fetchConversationsFailed
       }));
     }
   };
@@ -105,7 +106,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       setState(prev => ({
         ...prev,
-        error: "Failed to fetch users"
+        error: ERRORS.chat.fetchUsersFailed
       }));
     }
   };
@@ -129,7 +130,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     } catch {
       setState((prev) => (
         String(prev.selectedConversation?.id) === String(conversation.id)
-          ? { ...prev, loading: false, error: "Failed to fetch messages" }
+          ? { ...prev, loading: false, error: ERRORS.chat.fetchMessagesFailed }
           : prev
       ));
     }
@@ -164,7 +165,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       setState((prev) => ({
         ...prev,
-        error: "Failed to send message",
+        error: ERRORS.chat.sendFailed,
       }));
     }
   };
@@ -182,7 +183,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   } catch (error) {
     setState(prev => ({
       ...prev,
-      error: "Failed to create conversation"
+      error: ERRORS.chat.createFailed
     }));
     throw error;
   } finally {
@@ -203,7 +204,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       setState(prev => ({
         ...prev,
-        error: "Failed to delete conversation"
+        error: ERRORS.chat.deleteConversationFailed
       }));
     } finally {
       setState(prev => ({ ...prev, loading: false }));
@@ -246,7 +247,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       });
       await selectConversation(created);
     } catch {
-      setState((prev) => ({ ...prev, error: "Failed to open chat" }));
+      setState((prev) => ({ ...prev, error: ERRORS.chat.openFailed }));
     }
   };
 
@@ -270,7 +271,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       const res = await ChatRepository.updateMessage(messageId, "unsend");
       applyMessageUpdate(messageId, res.data);
     } catch {
-      setState((prev) => ({ ...prev, error: "Failed to unsend message" }));
+      setState((prev) => ({ ...prev, error: ERRORS.chat.unsendFailed }));
     }
   };
 
@@ -279,7 +280,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       await ChatRepository.updateMessage(messageId, "hide");
       applyMessageUpdate(messageId);
     } catch {
-      setState((prev) => ({ ...prev, error: "Failed to delete message" }));
+      setState((prev) => ({ ...prev, error: ERRORS.chat.deleteMessageFailed }));
     }
   };
 
@@ -296,7 +297,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         error: null,
       }));
     } catch {
-      setState((prev) => ({ ...prev, error: "Failed to accept message request" }));
+      setState((prev) => ({ ...prev, error: ERRORS.chat.acceptRequestFailed }));
     }
   };
 
@@ -311,7 +312,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         error: null,
       }));
     } catch {
-      setState((prev) => ({ ...prev, error: "Failed to reject message request" }));
+      setState((prev) => ({ ...prev, error: ERRORS.chat.rejectRequestFailed }));
     }
   };
 
@@ -324,7 +325,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       setState(prev => ({
         ...prev,
-        error: "Failed to react to message"
+        error: ERRORS.chat.reactFailed
       }));
     }
   };
