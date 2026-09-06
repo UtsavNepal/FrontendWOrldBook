@@ -4,9 +4,12 @@ import { AuthContext } from "../../../core/application/context/AuthContext";
 import { userRepository } from "../../../infrastructure/repositories/userRepository";
 import { ERRORS } from "../../../constants/errors";
 
+const fieldClass =
+  "w-full min-h-11 rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500";
+
 const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") => void }> = ({ setStep }) => {
   const navigate = useNavigate();
-  const { setEmail } = useContext(AuthContext)!; 
+  const { setEmail } = useContext(AuthContext)!;
   const [formData, setFormData] = useState({
     firstname: "",
     lastname: "",
@@ -18,13 +21,13 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
   const [loading, setLoading] = useState(false);
 
   const handleBack = () => {
-    navigate("/"); 
+    navigate("/login");
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name } = e.target;
     setFormData({ ...formData, [name]: e.target.value });
-    setErrors(prev => ({ ...prev, [name]: "", general: "" }));
+    setErrors((prev) => ({ ...prev, [name]: "", general: "" }));
   };
 
   const validateForm = () => {
@@ -102,94 +105,117 @@ const SignupForm: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow-md rounded-lg">
-      <h2 className="text-2xl font-bold mb-4 text-center">Sign Up</h2>
+    <>
+      <h2 className="mb-4 text-center text-xl font-bold text-gray-800 sm:text-2xl">Sign Up</h2>
       {errors.general && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div className="mb-4 rounded border border-red-400 bg-red-100 p-3 text-sm text-red-700">
           {errors.general}
         </div>
       )}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <input 
-            type="text" 
-            name="firstname" 
-            placeholder="First Name" 
-            value={formData.firstname} 
-            onChange={handleChange} 
-            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
-            required 
-          />
-          {errors.firstname && <div className="text-red-600 text-sm mt-1">{errors.firstname}</div>}
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label htmlFor="firstname" className="mb-1 block text-sm font-medium text-gray-700">
+              First name
+            </label>
+            <input
+              id="firstname"
+              type="text"
+              name="firstname"
+              placeholder="First name"
+              value={formData.firstname}
+              onChange={handleChange}
+              className={fieldClass}
+              autoComplete="given-name"
+              required
+            />
+            {errors.firstname && <div className="mt-1 text-sm text-red-600">{errors.firstname}</div>}
+          </div>
+          <div>
+            <label htmlFor="lastname" className="mb-1 block text-sm font-medium text-gray-700">
+              Last name
+            </label>
+            <input
+              id="lastname"
+              type="text"
+              name="lastname"
+              placeholder="Last name"
+              value={formData.lastname}
+              onChange={handleChange}
+              className={fieldClass}
+              autoComplete="family-name"
+              required
+            />
+            {errors.lastname && <div className="mt-1 text-sm text-red-600">{errors.lastname}</div>}
+          </div>
         </div>
         <div>
-          <input 
-            type="text" 
-            name="lastname" 
-            placeholder="Last Name" 
-            value={formData.lastname} 
-            onChange={handleChange} 
-            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
-            required 
+          <label htmlFor="birthday" className="mb-1 block text-sm font-medium text-gray-700">
+            Birthday
+          </label>
+          <input
+            id="birthday"
+            type="date"
+            name="birthday"
+            value={formData.birthday}
+            onChange={handleChange}
+            className={`${fieldClass} [color-scheme:light]`}
+            max={new Date().toISOString().slice(0, 10)}
+            required
           />
-          {errors.lastname && <div className="text-red-600 text-sm mt-1">{errors.lastname}</div>}
+          {errors.birthday && <div className="mt-1 text-sm text-red-600">{errors.birthday}</div>}
         </div>
         <div>
-          <input 
-            type="date" 
-            name="birthday" 
-            value={formData.birthday} 
-            onChange={handleChange} 
-            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
-            required 
-          />
-          {errors.birthday && <div className="text-red-600 text-sm mt-1">{errors.birthday}</div>}
-        </div>
-        <div>
-          <select 
-            name="gender" 
-            value={formData.gender} 
-            onChange={handleChange} 
-            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
+          <label htmlFor="gender" className="mb-1 block text-sm font-medium text-gray-700">
+            Gender
+          </label>
+          <select
+            id="gender"
+            name="gender"
+            value={formData.gender}
+            onChange={handleChange}
+            className={`${fieldClass} appearance-auto`}
             required
           >
             <option value="male">Male</option>
             <option value="female">Female</option>
           </select>
-          {errors.gender && <div className="text-red-600 text-sm mt-1">{errors.gender}</div>}
+          {errors.gender && <div className="mt-1 text-sm text-red-600">{errors.gender}</div>}
         </div>
         <div>
-          <input 
-            type="email" 
-            name="email" 
-            placeholder="Email" 
-            value={formData.email} 
-            onChange={handleChange} 
-            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
-            required 
+          <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            name="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleChange}
+            className={fieldClass}
+            autoComplete="email"
+            required
           />
-          {errors.email && <div className="text-red-600 text-sm mt-1">{errors.email}</div>}
+          {errors.email && <div className="mt-1 text-sm text-red-600">{errors.email}</div>}
         </div>
-        <button 
-          type="submit" 
-          className="w-full p-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+        <button
+          type="submit"
+          className="w-full min-h-11 rounded-lg bg-blue-500 px-4 py-2.5 text-base font-medium text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
           disabled={loading}
         >
           {loading ? "Signing up..." : "Sign Up"}
         </button>
       </form>
-      
-      <div className="mt-4 text-center">
-        <p className="py-2">Already have an account?</p>
-        <button
-          onClick={handleBack}
-          className="mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
-          Go Back
+
+      <p className="mt-4 text-center text-sm text-gray-600">
+        Already have an account?{" "}
+        <button type="button" onClick={handleBack} className="font-medium text-blue-500 hover:text-blue-600">
+          Log in
         </button>
-      </div>
-    </div>
+      </p>
+    </>
   );
 };
 
-export default SignupForm; 
+export default SignupForm;

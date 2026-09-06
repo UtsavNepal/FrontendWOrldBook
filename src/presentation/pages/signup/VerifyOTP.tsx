@@ -11,30 +11,44 @@ const VerifyOTP: React.FC<{ setStep: (step: "signup" | "verify" | "complete") =>
     e.preventDefault();
     try {
       await userRepository.verifyOtp(email, otp);
-      setStep("complete"); 
+      setStep("complete");
     } catch (error: any) {
       alert(error.message || ERRORS.signup.otpFailed);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <form onSubmit={handleVerifyOTP} className="bg-white p-6 rounded-lg shadow-md w-96">
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">Verify OTP</h2>
-        <input
-          type="text"
-          placeholder="Enter OTP"
-          value={otp}
-          onChange={(e) => setOtp(e.target.value)}
-          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
-          required
-        />
-        <button type="submit" className="w-full mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg transition">
-          Verify OTP
+    <>
+      <h2 className="mb-2 text-center text-xl font-bold text-gray-800 sm:text-2xl">Verify email</h2>
+      <p className="mb-4 text-center text-sm text-gray-600">
+        Enter the code we sent to {email || "your email"}.
+      </p>
+      <form onSubmit={handleVerifyOTP} className="space-y-4">
+        <div>
+          <label htmlFor="otp" className="mb-1 block text-sm font-medium text-gray-700">
+            Code
+          </label>
+          <input
+            id="otp"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            placeholder="Enter the 6-digit code"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            className="w-full min-h-11 rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+        <button
+          type="submit"
+          className="w-full min-h-11 rounded-lg bg-blue-500 px-4 py-2.5 text-base font-medium text-white hover:bg-blue-600"
+        >
+          Verify
         </button>
       </form>
-    </div>
+    </>
   );
 };
 
-export default VerifyOTP; 
+export default VerifyOTP;
