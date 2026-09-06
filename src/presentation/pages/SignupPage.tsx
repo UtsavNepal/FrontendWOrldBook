@@ -5,16 +5,16 @@ import { useNavigate } from "react-router-dom";
 
 export const SignupPage = () => {
   const [step, setStep] = useState<"signup" | "verify" | "complete">("signup");
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAuthLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isAuthLoading && isAuthenticated) {
       navigate("/feed", { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isAuthLoading, navigate]);
 
-  if (isAuthenticated) return null;
+  if (isAuthLoading || isAuthenticated) return null;
 
   return (
     <div>

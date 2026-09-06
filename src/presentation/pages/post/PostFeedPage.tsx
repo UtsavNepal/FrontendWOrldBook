@@ -29,7 +29,7 @@ const PostFeedPage: React.FC = () => {
     deleteComment,
     getComments,
   } = usePostContext();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isAuthLoading, user } = useAuth();
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [openCommentSectionId, setOpenCommentSectionId] = useState<string | null>(null);
   const [newComment, setNewComment] = useState("");
@@ -178,13 +178,11 @@ const PostFeedPage: React.FC = () => {
     ));
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/login");
-    } else {
-      setLoading(true);
-      fetchPosts().finally(() => setLoading(false));
-    }
-  }, []);
+    if (isAuthLoading) return;
+    if (!isAuthenticated) return;
+    setLoading(true);
+    fetchPosts().finally(() => setLoading(false));
+  }, [isAuthLoading, isAuthenticated]);
 
   useEffect(() => {
     if (openCommentSectionId) {

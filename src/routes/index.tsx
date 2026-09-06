@@ -11,13 +11,21 @@ import ChatPage from "../presentation/pages/ChatPage";
 import SearchPage from "../presentation/pages/SearchPage";
 import NotificationsPage from "../presentation/pages/NotificationsPage";
 import ViewPostPage from "../presentation/pages/post/ViewPostPage";
+import { useAuth } from "../core/application/context/AuthContext";
+import { SpinnerOverlay } from "../presentation/ui/Spinner";
+
+function HomeRedirect() {
+  const { isAuthenticated, isAuthLoading } = useAuth();
+  if (isAuthLoading) return <SpinnerOverlay />;
+  return <Navigate to={isAuthenticated ? "/feed" : "/login"} replace />;
+}
 
 export const AppRoutes = () => {
   return (
     <Routes>
+      <Route path="/" element={<HomeRedirect />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/friends" element={<FriendPage />} />
@@ -29,6 +37,7 @@ export const AppRoutes = () => {
         <Route path="/post/:id" element={<ViewPostPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
       </Route>
+      <Route path="*" element={<HomeRedirect />} />
     </Routes>
   );
 };

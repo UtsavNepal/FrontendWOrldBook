@@ -53,7 +53,10 @@ axiosInstance.interceptors.response.use(
       }
     });
 
-    if (error.response?.status === 401 && !originalRequest?._retry) {
+    const requestUrl = String(originalRequest?.url || "");
+    const isRefreshCall = requestUrl.includes("/auth/refresh");
+
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isRefreshCall) {
       originalRequest._retry = true;
 
       const newAccessToken = await refreshAccessToken();
@@ -65,6 +68,7 @@ axiosInstance.interceptors.response.use(
 
     if (error.response?.status === 401) {
       clearTokens();
+      window.dispatchEvent(new Event("auth:logout"));
     }
 
     return Promise.reject(error);

@@ -29,7 +29,7 @@ import { postStoryLine, visibilityLabel } from "../../../utils/postStory";
 
 
 export const WelcomePage = () => {
-  const { isAuthenticated, logout, user } = useAuth();
+  const { isAuthenticated, isAuthLoading, logout, user } = useAuth();
   const { profile, fetchProfile, updateProfile, uploadProfilePicture, deleteAccount, uploadCoverPhoto, removeProfilePicture, removeCoverPhoto } = useProfile();
   const [editMode, setEditMode] = useState<"username" | "profile_picture" | "bio" | "gender" | null>(null);
   const [updatedUsername, setUpdatedUsername] = useState("");
@@ -73,13 +73,11 @@ export const WelcomePage = () => {
   const { confirm, modal } = useConfirm();
   
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/login");
-    } else {
-      setLoading(true);
-      fetchProfile().finally(() => setLoading(false));
-    }
-  }, []);
+    if (isAuthLoading) return;
+    if (!isAuthenticated) return;
+    setLoading(true);
+    fetchProfile().finally(() => setLoading(false));
+  }, [isAuthLoading, isAuthenticated]);
 
   const handleUpdateProfile = async () => {
     setLoading(true);

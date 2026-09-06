@@ -1,7 +1,7 @@
 import { createContext, useContext, ReactNode, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { authRepository } from "../../../infrastructure/repositories/AuthRepository";
-import { saveTokens, clearTokens, isAuthenticated } from "../../../utils/tokenUtils";
+import { saveTokens, clearTokens, getAccessToken } from "../../../utils/tokenUtils";
 import { profileRepository } from "../../../infrastructure/repositories/ProfileRepository";
 import { ERRORS } from "../../../constants/errors";
 
@@ -32,35 +32,68 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [isAuth, setIsAuth] = useState(isAuthenticated());
+  const [isAuth, setIsAuth] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState<string>("");
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const navigate = useNavigate();
 
+  const logout = () => {
+    clearTokens();
+    setIsAuth(false);
+    setUser(null);
+    setEmail("");
+    navigate("/login", { replace: true });
+  };
+
+  const fetchUserData = async () => {
+    const userData = await authRepository.getUserProfile();
+    let picture = userData.profile_picture;
+    try {
+      const profileData = await profileRepository.getProfile();
+      picture = profileData.profile_picture || picture;
+    } catch {
+      // Profile can be missing; the session is still valid.
+    }
+    setUser({
+      ...userData,
+      profile_picture: picture,
+    });
+    return userData;
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
-      setIsAuth(isAuthenticated());
-      if (isAuthenticated()) {
-        await fetchUserData();
+      if (!getAccessToken()) {
+        setIsAuth(false);
+        setUser(null);
+        setIsAuthLoading(false);
+        return;
       }
-      setIsAuthLoading(false);
+      try {
+        await fetchUserData();
+        setIsAuth(true);
+      } catch {
+        clearTokens();
+        setIsAuth(false);
+        setUser(null);
+      } finally {
+        setIsAuthLoading(false);
+      }
     };
     checkAuth();
   }, []);
 
-  const fetchUserData = async () => {
-    try {
-      const userData = await authRepository.getUserProfile();
-      const profileData = await profileRepository.getProfile();
-      setUser({
-        ...userData,
-        profile_picture: profileData.profile_picture
-      });
-    } catch (error) {
-      console.error("Failed to fetch user data:", error);
-    }
-  };
+  useEffect(() => {
+    const onForcedLogout = () => {
+      clearTokens();
+      setIsAuth(false);
+      setUser(null);
+      navigate("/login", { replace: true });
+    };
+    window.addEventListener("auth:logout", onForcedLogout);
+    return () => window.removeEventListener("auth:logout", onForcedLogout);
+  }, [navigate]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -72,20 +105,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (response.user) {
         setUser(response.user);
       }
-      fetchUserData();
-      navigate("/welcome");
+      try {
+        await fetchUserData();
+      } catch {
+        // Token was just issued; feed can still load.
+      }
+      navigate("/feed", { replace: true });
     } catch (error) {
       console.error("Login failed:", error);
       throw error;
     }
-  };
-
-  const logout = () => {
-    clearTokens();
-    setIsAuth(false);
-    setUser(null);
-    setEmail("");
-    navigate("/login");
   };
 
   const signup = async (email: string) => {

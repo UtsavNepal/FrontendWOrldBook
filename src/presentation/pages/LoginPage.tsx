@@ -10,7 +10,7 @@ export const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false); 
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, isAuthLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ export const LoginPage = () => {
   const successMessage = location.state?.message; 
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isAuthLoading && isAuthenticated) {
       navigate("/feed", { replace: true });
     }
     // Prevent scrolling
@@ -36,7 +36,7 @@ export const LoginPage = () => {
       document.body.style.height = '';
       document.body.style.margin = '';
     };
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isAuthLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +53,7 @@ export const LoginPage = () => {
     }
   };
 
-  if (isAuthenticated) return null;
+  if (isAuthLoading || isAuthenticated) return null;
 
   return (
     <div className="fixed inset-0 bg-gray-200 flex flex-col items-center justify-center">
