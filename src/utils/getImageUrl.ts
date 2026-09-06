@@ -6,10 +6,15 @@ function hasMedia(path?: string | null): path is string {
   return Boolean(path && path.trim());
 }
 
+function isAbsoluteUrl(path: string) {
+  return /^https?:\/\//i.test(path) || path.startsWith("//");
+}
+
 export function getImageUrl(path?: string | null): string {
   if (!hasMedia(path)) return EMPTY_PROFILE_IMAGE;
-  if (path.startsWith("http")) return path;
-  return `${backendUrl}${path}`;
+  const trimmed = path.trim();
+  if (isAbsoluteUrl(trimmed)) return trimmed;
+  return `${backendUrl}${trimmed}`;
 }
 
 export function getPostImages(post?: { image?: string | null; images?: string[] | null } | null): string[] {
@@ -20,6 +25,7 @@ export function getPostImages(post?: { image?: string | null; images?: string[] 
 
 export function getCoverUrl(path?: string | null): string | null {
   if (!hasMedia(path)) return null;
-  if (path.startsWith("http")) return path;
-  return `${backendUrl}${path}`;
+  const trimmed = path.trim();
+  if (isAbsoluteUrl(trimmed)) return trimmed;
+  return `${backendUrl}${trimmed}`;
 }
