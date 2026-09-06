@@ -3,6 +3,7 @@ import { PostRepository } from "../../../infrastructure/repositories/PostReposit
 import { Post, Comment } from "../../../core/domain/entities/Post";
 import { useAuth } from "./AuthContext";
 import { ERRORS } from "../../../constants/errors";
+import { prepareImagesForUpload } from "../../../utils/compressImage";
 
 interface PostContextType {
   posts: Post[];
@@ -47,7 +48,8 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const formData = new FormData();
     formData.append("content", content);
     formData.append("visibility", visibility);
-    images.forEach((image) => formData.append("images", image));
+    const readyImages = await prepareImagesForUpload(images);
+    readyImages.forEach((image) => formData.append("images", image));
 
     try {
       const newPost = await postRepository.createPost(formData);
@@ -62,7 +64,8 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
     formData.append("content", content);
     formData.append("visibility", visibility);
     formData.append("keep_images", JSON.stringify(keepImages));
-    images.forEach((image) => formData.append("images", image));
+    const readyImages = await prepareImagesForUpload(images);
+    readyImages.forEach((image) => formData.append("images", image));
 
     try {
       const updatedPost = await postRepository.updatePost(id, formData);

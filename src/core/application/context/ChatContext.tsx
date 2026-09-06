@@ -12,6 +12,7 @@ import {
 import { censorText } from "../../../utils/censorText";
 import { useAuth } from "./AuthContext";
 import { ERRORS } from "../../../constants/errors";
+import { prepareImageForUpload } from "../../../utils/compressImage";
 
 interface ChatContextType extends ChatState {
   isChatOpen: boolean;
@@ -141,7 +142,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       const formData = new FormData();
       formData.append("conversation", conversationId.toString());
       if (text) formData.append("text", censorText(text));
-      if (image) formData.append("image", image);
+      if (image) formData.append("image", await prepareImageForUpload(image));
       if (gif_url) formData.append("gif_url", gif_url);
 
       const res = await ChatRepository.sendMessage(formData);

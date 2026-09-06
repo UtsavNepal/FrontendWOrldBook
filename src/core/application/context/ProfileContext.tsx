@@ -62,22 +62,13 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
 
   
   const uploadProfilePicture = async (file: File) => {
-    try {
-      const updatedProfile = await profileRepository.uploadProfilePicture(file);
-      setProfile(updatedProfile);
-    } catch (error) {
-      console.error("Failed to upload profile picture:", error);
-    }
+    const updatedProfile = await profileRepository.uploadProfilePicture(file);
+    setProfile(updatedProfile);
   };
 
-  
   const uploadCoverPhoto = async (file: File) => {
-    try {
-      const updatedProfile = await profileRepository.uploadCoverPhoto(file);
-      setProfile(updatedProfile);
-    } catch (error) {
-      console.error("Failed to upload cover photo:", error);
-    }
+    const updatedProfile = await profileRepository.uploadCoverPhoto(file);
+    setProfile(updatedProfile);
   };
 
   

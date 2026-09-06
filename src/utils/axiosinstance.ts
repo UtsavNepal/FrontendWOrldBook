@@ -18,7 +18,13 @@ axiosInstance.interceptors.request.use(
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
     if (config.data instanceof FormData) {
-      delete config.headers["Content-Type"];
+      const headers = config.headers as { delete?: (name: string) => void };
+      if (typeof headers.delete === "function") {
+        headers.delete("Content-Type");
+        headers.delete("content-type");
+      } else {
+        delete config.headers["Content-Type"];
+      }
     } else if (!config.headers["Content-Type"]) {
       config.headers["Content-Type"] = "application/json";
     }

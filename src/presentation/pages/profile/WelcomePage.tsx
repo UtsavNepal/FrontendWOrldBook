@@ -256,6 +256,13 @@ export const WelcomePage = () => {
       setProcess({ label, percent: 100 });
       await Promise.all([fetchProfile(), fetchPosts()]);
       await new Promise((resolve) => window.setTimeout(resolve, 350));
+    } catch (error) {
+      await confirm({
+        title: "Upload failed",
+        message: error instanceof Error ? error.message : ERRORS.profile.uploadPictureFailed,
+        confirmLabel: "OK",
+        cancelLabel: "Close",
+      });
     } finally {
       setProcess(null);
     }

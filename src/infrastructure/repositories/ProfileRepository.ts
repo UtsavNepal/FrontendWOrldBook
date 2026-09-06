@@ -2,6 +2,7 @@ import { BaseRepository } from "../base/BaseRepository";
 import { Profile } from "../../core/domain/entities/Profile.entity";
 import { api } from "../../config/api";
 import { ERRORS } from "../../constants/errors";
+import { prepareImageForUpload } from "../../utils/compressImage";
 
 export interface ProfileResponse {
   id: string;
@@ -62,10 +63,8 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
 
   async uploadProfilePicture(file: File): Promise<Profile> {
     const formData = new FormData();
-    formData.append("profile_picture", file);
-    const response = await this.post<ProfileResponse>(api.uploads.profilePicture(), formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    formData.append("profile_picture", await prepareImageForUpload(file));
+    const response = await this.post<ProfileResponse>(api.uploads.profilePicture(), formData);
     if (!response || !response.user) {
       throw new Error(ERRORS.response.invalidProfile);
     }
@@ -74,10 +73,8 @@ export class ProfileRepository extends BaseRepository<ProfileResponse> {
 
   async uploadCoverPhoto(file: File): Promise<Profile> {
     const formData = new FormData();
-    formData.append("cover_photo", file);
-    const response = await this.post<ProfileResponse>(api.uploads.coverPhoto(), formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    formData.append("cover_photo", await prepareImageForUpload(file));
+    const response = await this.post<ProfileResponse>(api.uploads.coverPhoto(), formData);
     if (!response || !response.user) {
       throw new Error(ERRORS.response.invalidProfile);
     }
